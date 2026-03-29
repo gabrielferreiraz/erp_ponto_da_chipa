@@ -24,7 +24,6 @@ RUN npm run build
 # Stage 3: Runner — Imagem mínima e segura
 # =============================================
 FROM node:20-alpine AS runner
-# Adicionado postgresql-client para suporte ao pg_isready no start.sh
 RUN apk add --no-cache libc6-compat openssl postgresql-client
 WORKDIR /app
 ENV NODE_ENV=production
@@ -40,12 +39,12 @@ COPY --from=builder /app/.next/static ./.next/static
 # Copia o schema e migrations para o runner
 COPY --from=builder /app/prisma ./prisma
 
-# Garante acesso total ao Prisma (CLI, Motores e dependências internas) no runner
-# Isso permite que o ./node_modules/.bin/prisma migrate deploy funcione sem rede
+# SOLUÇÃO DEFINITIVA PRISMA: Copia CLI completo, engines e binários para evitar erro .wasm
+# Isso garante que o ./node_modules/.bin/prisma tenha todas as dependências no runtime
+COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
+COPY --from=builder /app/node_modules/.bin ./node_modules/.bin
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
-COPY --from=builder /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
 
 # Copia e configura o script de inicialização robusto
 COPY --from=builder /app/scripts/start.sh ./start.sh
