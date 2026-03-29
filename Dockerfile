@@ -24,7 +24,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Gera o Prisma Client com base no schema
+# Gera o Prisma Client com base no schema (Prisma 5.22.0 fixo)
 RUN npx prisma generate
 
 # Build de produção (standalone output)
