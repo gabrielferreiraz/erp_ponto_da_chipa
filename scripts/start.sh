@@ -1,16 +1,30 @@
 #!/bin/sh
 set -e
 
-# O script interrompe a execução (set -e) se qualquer comando falhar.
-# Isso garante que o container não suba com o banco de dados desatualizado.
+# ==============================================================================
+# PONTO DA CHIPA: SCRIPT DE INICIALIZAÇÃO ROBUSTO
+# ==============================================================================
 
-echo "--- PONTO DA CHIPA: INICIALIZAÇÃO ---"
+echo "--- PONTO DA CHIPA ---"
 
-# 1. Executar migrations pendentes usando o binário local absoluto
-# Isso evita que o npx procure ou instale versões globais (como a v7)
-echo "[1/2] Executando migrations do Prisma (Local)..."
+# 1. Aguarda o banco de dados estar pronto (postgresql-client deve estar instalado)
+# Requer variáveis DB_HOST e DB_PORT configuradas no ambiente (EasyPanel)
+if [ -n "$DB_HOST" ]; then
+  echo "Aguardando banco de dados ($DB_HOST:$DB_PORT)..."
+  until pg_isready -h "$DB_HOST" -p "$DB_PORT"; do
+    echo "Banco ainda não está pronto. Tentando novamente em 2 segundos..."
+    sleep 2
+  done
+  echo "Banco de dados está pronto!"
+else
+  echo "Aviso: DB_HOST não configurado. Pulando verificação pg_isready."
+fi
+
+# 2. Executa migrations usando o binário local (zero dependência de rede)
+# O Prisma já está em dependencies no package.json e foi copiado para o runner.
+echo "Executando migrations do Prisma (Local)..."
 ./node_modules/.bin/prisma migrate deploy
 
-# 2. Iniciar o servidor Next.js standalone (gerado pelo build)
-echo "[2/2] Iniciando servidor standalone..."
+# 3. Inicia o servidor Next.js standalone
+echo "Iniciando servidor Next.js..."
 node server.js

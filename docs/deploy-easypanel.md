@@ -30,6 +30,8 @@ Antes de realizar o deploy, garanta que:
 ### 3. Configurar Variáveis de Ambiente
 Em **Environment Variables**, adicione as variáveis documentadas no `.env.production.example`:
 - `DATABASE_URL`: URL interna do PostgreSQL do EasyPanel.
+- `DB_HOST`: O nome do serviço do banco de dados (ex: `postgres`).
+- `DB_PORT`: A porta interna do banco de dados (ex: `5432`).
 - `AUTH_SECRET`: Chave aleatória robusta.
 - `AUTH_URL`: Seu domínio final (ex: `https://ponto.seusite.com`).
 - `NEXT_PUBLIC_APP_URL`: Mesma URL do `AUTH_URL`.

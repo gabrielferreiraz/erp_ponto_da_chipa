@@ -2,32 +2,20 @@
 # Stage 1: Instalar dependências (limpo para prod)
 # =============================================
 FROM node:20-alpine AS deps
-
 RUN apk add --no-cache libc6-compat openssl
-
 WORKDIR /app
-
-# Copia apenas o necessário para o cache de deps
-COPY package.json package-lock.json* ./
-RUN npm ci --frozen-lockfile
+COPY package*.json ./
+RUN npm ci
 
 # =============================================
 # Stage 2: Builder — Prisma Client + Build Next.js
 # =============================================
 FROM node:20-alpine AS builder
-
 RUN apk add --no-cache libc6-compat openssl
-
 WORKDIR /app
-
-# Copia node_modules já instalados (stage 1)
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-
-# Gera o Prisma Client com base no schema (Prisma 5.22.0 fixo)
 RUN npx prisma generate
-
-# Build de produção (standalone output)
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 RUN npm run build
@@ -36,40 +24,37 @@ RUN npm run build
 # Stage 3: Runner — Imagem mínima e segura
 # =============================================
 FROM node:20-alpine AS runner
-
+# Adicionado postgresql-client para suporte ao pg_isready no start.sh
 RUN apk add --no-cache libc6-compat openssl postgresql-client
-
 WORKDIR /app
-
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Cria usuário não-root por segurança
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+RUN addgroup -S nodejs && adduser -S nextjs -G nodejs
 
 # Copia standalone output e static assets
-COPY --from=builder /app/public* ./public
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+
+# Copia o schema e migrations para o runner
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copia scripts de inicialização e backup
-COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
-RUN chmod +x scripts/*.sh
-
-# Garante acesso total ao Prisma (Client, CLI, Engines e dependências internas)
+# Garante acesso total ao Prisma (CLI, Motores e dependências internas) no runner
+# Isso permite que o ./node_modules/.bin/prisma migrate deploy funcione sem rede
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
 COPY --from=builder /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
 
+# Copia e configura o script de inicialização robusto
+COPY --from=builder /app/scripts/start.sh ./start.sh
+RUN chmod +x ./start.sh
+
 USER nextjs
-
 EXPOSE 3000
-
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Executa o script de inicialização robusto
-CMD ["sh", "scripts/start.sh"]
+# Inicia o servidor através do script de inicialização robusto
+CMD ["sh", "./start.sh"]
