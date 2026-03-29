@@ -6,9 +6,9 @@ set -e
 
 echo "--- PONTO DA CHIPA: INICIALIZAÇÃO ---"
 
-# 1. Executar migrations pendentes (deploy mode - seguro para produção)
+# 1. Executar migrations pendentes usando o binário local (Prisma 5)
 echo "[1/2] Executando migrations do Prisma..."
-npx prisma migrate deploy
+./node_modules/.bin/prisma migrate deploy
 
 # 2. Iniciar o servidor Next.js standalone (gerado pelo build)
 echo "[2/2] Iniciando servidor standalone..."
