@@ -34,3 +34,15 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# prisma
+/src/generated/prisma
+/prisma/migrations/*.sql.bak
+
+# env files (nunca comitar credenciais)
+.env
+.env.local
+.env.*.local
+
+# Docker
+.dockerignore

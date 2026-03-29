@@ -1,0 +1,242 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id        String   @id @default(cuid())
+  nome      String
+  email     String   @unique
+  senha     String
+  role      Role     @default(ATENDENTE)
+  ativo     Boolean  @default(true)
+  criadoEm DateTime @default(now())
+
+  pedidosCriados   Pedido[]              @relation("AtendentePedido")
+  pedidosFechados  Pedido[]              @relation("CaixaPedido")
+  movimentacoes    MovimentacaoEstoque[]
+  itensCancelados  ItemPedido[]
+  fechamentosTurno ShiftClosing[]
+
+  @@map("usuarios")
+}
+
+enum Role {
+  ADMIN
+  CAIXA
+  ATENDENTE
+
+  @@map("role")
+}
+
+model Categoria {
+  id       String    @id @default(cuid())
+  nome     String
+  cor      String    @default("#000000")
+  ordem    Int       @default(0)
+  produtos Produto[]
+
+  @@map("categorias")
+}
+
+model Produto {
+  id            String    @id @default(cuid())
+  nome          String
+  categoriaId   String
+  categoria     Categoria @relation(fields: [categoriaId], references: [id])
+  preco         Decimal   @db.Decimal(10, 2)
+  qtdEstoque    Int       @default(0)
+  qtdVisor      Int       @default(0)
+  estoqueMinimo Int       @default(5)
+  disponivel    Boolean   @default(true)
+  imagemUrl     String?
+  precoAnterior        Decimal?  @db.Decimal(10, 2)
+  precoAtualizadoEm    DateTime?
+  precoAtualizadoPorId String?
+  criadoEm     DateTime  @default(now())
+  atualizadoEm DateTime  @updatedAt
+
+  itensPedido      ItemPedido[]
+  movimentacoes    MovimentacaoEstoque[]
+  ShiftClosingItem ShiftClosingItem[]
+
+  @@index([categoriaId])
+  @@index([disponivel])
+  @@map("produtos")
+}
+
+model Mesa {
+  id      String   @id @default(cuid())
+  numero  Int      @unique
+  ativa   Boolean  @default(true)
+  pedidos Pedido[]
+
+  @@map("mesas")
+}
+
+model Pedido {
+  id             String          @id @default(cuid())
+  codigo         String          @unique
+  mesaId         String?
+  mesa           Mesa?           @relation(fields: [mesaId], references: [id])
+  tipo           TipoPedido
+  orderStatus    OrderStatus     @default(AGUARDANDO_COBRANCA)
+  paymentStatus  PaymentStatus   @default(PENDENTE)
+  observacao     String?
+  formaPagamento FormaPagamento?
+  idempotencyKey String?         @unique
+  totalBruto     Decimal?        @db.Decimal(10, 2)
+  totalCancelado Decimal?        @db.Decimal(10, 2)
+  totalFinal     Decimal?        @db.Decimal(10, 2)
+  atendenteId    String
+  atendente      Usuario         @relation("AtendentePedido", fields: [atendenteId], references: [id])
+  caixaId        String?
+  caixa          Usuario?        @relation("CaixaPedido", fields: [caixaId], references: [id])
+  criadoEm      DateTime        @default(now())
+  pagoEm        DateTime?
+  itens          ItemPedido[]
+
+  @@index([orderStatus])
+  @@index([paymentStatus])
+  @@index([atendenteId])
+  @@index([criadoEm])
+  @@map("pedidos")
+}
+
+enum TipoPedido {
+  LOCAL
+  VIAGEM
+
+  @@map("tipo_pedido")
+}
+
+enum OrderStatus {
+  ABERTO
+  AGUARDANDO_COBRANCA
+  CANCELADO
+  PAGO
+
+  @@map("order_status")
+}
+
+enum PaymentStatus {
+  PENDENTE
+  PAGO
+  FALHOU
+
+  @@map("payment_status")
+}
+
+enum FormaPagamento {
+  DINHEIRO
+  PIX
+  CARTAO_DEBITO
+  CARTAO_CREDITO
+
+  @@map("forma_pagamento")
+}
+
+model ItemPedido {
+  id                 String     @id @default(cuid())
+  pedidoId           String
+  pedido             Pedido     @relation(fields: [pedidoId], references: [id])
+  produtoId          String
+  produto            Produto    @relation(fields: [produtoId], references: [id])
+  nomeSnapshot       String
+  precoSnapshot      Decimal    @db.Decimal(10, 2)
+  quantidade         Int
+  status             StatusItem @default(ATIVO)
+  motivoCancelamento String?
+  canceladoPorId     String?
+  canceladoPor       Usuario?   @relation(fields: [canceladoPorId], references: [id])
+  canceladoEm       DateTime?
+
+  @@index([pedidoId])
+  @@index([produtoId])
+  @@index([status])
+  @@map("itens_pedido")
+}
+
+enum StatusItem {
+  ATIVO
+  CANCELADO
+
+  @@map("status_item")
+}
+
+model MovimentacaoEstoque {
+  id         String           @id @default(cuid())
+  produtoId  String
+  produto    Produto          @relation(fields: [produtoId], references: [id])
+  tipo       TipoMovimentacao
+  origem     OrigemEstoque
+  quantidade Int
+  pedidoId   String?
+  usuarioId  String
+  usuario    Usuario          @relation(fields: [usuarioId], references: [id])
+  observacao String?
+  criadoEm  DateTime         @default(now())
+
+  @@index([produtoId])
+  @@index([criadoEm])
+  @@index([tipo])
+  @@map("movimentacoes_estoque")
+}
+
+enum TipoMovimentacao {
+  VENDA
+  REPOSICAO_VISOR
+  ENTRADA_ESTOQUE
+  AJUSTE
+  PERDA
+
+  @@map("tipo_movimentacao")
+}
+
+enum OrigemEstoque {
+  ESTOQUE
+  VISOR
+
+  @@map("origem_estoque")
+}
+
+model ShiftClosing {
+  id           String             @id @default(cuid())
+  usuarioId    String
+  usuario      Usuario            @relation(fields: [usuarioId], references: [id])
+  iniciadoEm  DateTime           @default(now())
+  finalizadoEm DateTime?
+  status       ShiftStatus        @default(EM_ANDAMENTO)
+  itens        ShiftClosingItem[]
+
+  @@index([status])
+  @@index([iniciadoEm])
+  @@map("shift_closings")
+}
+
+enum ShiftStatus {
+  EM_ANDAMENTO
+  FINALIZADO
+
+  @@map("shift_status")
+}
+
+model ShiftClosingItem {
+  id             String       @id @default(cuid())
+  shiftClosingId String
+  shiftClosing   ShiftClosing @relation(fields: [shiftClosingId], references: [id])
+  produtoId      String
+  produto        Produto      @relation(fields: [produtoId], references: [id])
+  qtdSistema     Int
+  qtdFisica      Int
+  diferenca      Int
+  motivo         String?
+  criadoEm      DateTime     @default(now())
+
+  @@index([shiftClosingId])
+  @@map("shift_closing_items")
+}
