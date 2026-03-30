@@ -45,12 +45,7 @@ COPY --from=builder /app/node_modules/.bin ./node_modules/.bin
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
-# Adiciona suporte para executar o seed (TypeScript) em produção
-COPY --from=builder /app/node_modules/ts-node ./node_modules/ts-node
-COPY --from=builder /app/node_modules/typescript ./node_modules/typescript
-COPY --from=builder /app/node_modules/arg ./node_modules/arg
-COPY --from=builder /app/node_modules/v8-compile-cache-lib ./node_modules/v8-compile-cache-lib
-COPY --from=builder /app/node_modules/yn ./node_modules/yn
+# Copia dependências necessárias para o seed em produção
 COPY --from=builder /app/node_modules/bcryptjs ./node_modules/bcryptjs
 
 # Copia e configura o script de inicialização robusto
