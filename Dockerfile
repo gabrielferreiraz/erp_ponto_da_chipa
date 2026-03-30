@@ -40,11 +40,18 @@ COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
 
 # SOLUÇÃO DEFINITIVA PRISMA: Copia CLI completo, engines e binários para evitar erro .wasm
-# Isso garante que o ./node_modules/.bin/prisma tenha todas as dependências no runtime
 COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
 COPY --from=builder /app/node_modules/.bin ./node_modules/.bin
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+
+# Adiciona suporte para executar o seed (TypeScript) em produção
+COPY --from=builder /app/node_modules/ts-node ./node_modules/ts-node
+COPY --from=builder /app/node_modules/typescript ./node_modules/typescript
+COPY --from=builder /app/node_modules/arg ./node_modules/arg
+COPY --from=builder /app/node_modules/v8-compile-cache-lib ./node_modules/v8-compile-cache-lib
+COPY --from=builder /app/node_modules/yn ./node_modules/yn
+COPY --from=builder /app/node_modules/bcryptjs ./node_modules/bcryptjs
 
 # Copia e configura o script de inicialização robusto
 COPY --from=builder /app/scripts/start.sh ./start.sh
