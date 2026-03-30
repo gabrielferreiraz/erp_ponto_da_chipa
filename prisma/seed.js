@@ -109,7 +109,12 @@ async function main() {
 
   const admin = await prisma.usuario.upsert({
     where: { email: 'admin@pontodachipa.com' },
-    update: {},
+    update: {
+      senha: senhaHasheada,
+      emailVerified: new Date(),
+      ativo: true,
+      role: 'ADMIN',
+    },
     create: {
       nome: 'Administrador',
       email: 'admin@pontodachipa.com',
@@ -120,13 +125,18 @@ async function main() {
     },
   });
 
-  console.log('✅ Usuário ADMIN criado:', { email: admin.email, role: admin.role });
+  console.log('✅ Usuário ADMIN criado ou atualizado:', { email: admin.email, role: admin.role });
 
   // Criar usuário CAIXA de exemplo
   const senhaCaixa = await bcrypt.hash('Caixa@2024', 12);
   await prisma.usuario.upsert({
     where: { email: 'caixa@pontodachipa.com' },
-    update: {},
+    update: {
+      senha: senhaCaixa,
+      emailVerified: new Date(),
+      ativo: true,
+      role: 'CAIXA',
+    },
     create: {
       nome: 'Operador Caixa',
       email: 'caixa@pontodachipa.com',
@@ -137,13 +147,18 @@ async function main() {
     },
   });
 
-  console.log('✅ Usuário CAIXA de exemplo criado');
+  console.log('✅ Usuário CAIXA de exemplo criado ou atualizado');
 
   // Criar usuário ATENDENTE de exemplo
   const senhaAtendente = await bcrypt.hash('Atendente@2024', 12);
   await prisma.usuario.upsert({
     where: { email: 'atendente@pontodachipa.com' },
-    update: {},
+    update: {
+      senha: senhaAtendente,
+      emailVerified: new Date(),
+      ativo: true,
+      role: 'ATENDENTE',
+    },
     create: {
       nome: 'Atendente Exemplo',
       email: 'atendente@pontodachipa.com',
@@ -154,7 +169,7 @@ async function main() {
     },
   });
 
-  console.log('✅ Usuário ATENDENTE de exemplo criado');
+  console.log('✅ Usuário ATENDENTE de exemplo criado ou atualizado');
 
   console.log('\n🎉 Seed concluído com sucesso!');
   console.log('\n📋 Credenciais de acesso:');
