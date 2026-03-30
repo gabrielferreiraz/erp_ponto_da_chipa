@@ -20,6 +20,10 @@ export async function middleware(request: NextRequest) {
   const token = await getToken({
     req: request,
     secret: process.env.AUTH_SECRET,
+    // Garante que o getToken use o mesmo nome de cookie definido no auth.ts
+    cookieName: process.env.NODE_ENV === 'production' 
+      ? '__Secure-authjs.session-token' 
+      : 'authjs.session-token',
   })
 
   if (isPublicRoute) {
