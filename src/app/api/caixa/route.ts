@@ -1,15 +1,10 @@
 import { NextResponse } from 'next/server'
-import { auth } from '@/lib/auth-instance'
+import { withSecurity } from '@/lib/with-security'
 
-export async function POST() {
-  const session = await auth()
-  if (!session?.user) {
-    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
-  }
-  if (!['ADMIN', 'CAIXA'].includes(session.user.role)) {
-    return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
-  }
-
+export const POST = withSecurity(async (req, session) => {
   // TODO: Implementar operações de caixa na Fase 2
   return NextResponse.json({ message: 'Operações de caixa — Fase 2' }, { status: 501 })
-}
+}, { 
+  roles: ['ADMIN', 'CAIXA'],
+  rateLimit: { limit: 10, windowMs: 60 * 1000 }
+})

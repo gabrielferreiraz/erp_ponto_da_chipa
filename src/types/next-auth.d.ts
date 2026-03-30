@@ -6,6 +6,7 @@ declare module 'next-auth' {
     id: string
     role: 'ADMIN' | 'CAIXA' | 'ATENDENTE'
     nome: string
+    sessionVersion: number
   }
 
   interface Session {
@@ -23,5 +24,6 @@ declare module 'next-auth/jwt' {
     id: string
     role: 'ADMIN' | 'CAIXA' | 'ATENDENTE'
     nome: string
+    sessionVersion: number
   }
 }

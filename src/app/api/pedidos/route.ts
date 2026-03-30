@@ -1,65 +1,38 @@
 import { NextResponse } from 'next/server'
-import { auth } from '@/lib/auth-instance'
+import { withSecurity } from '@/lib/with-security'
 import { createPedidoSchema } from '@/lib/validations/pedido'
 import { PedidoService } from '@/services/pedido.service'
 
 const pedidoService = new PedidoService()
 
-export async function GET(req: Request) {
-  const session = await auth()
+export const GET = withSecurity(async (req, session) => {
+  const pedidos = await pedidoService.getPedidosAtendente(session.user.id)
+  return NextResponse.json(pedidos)
+}, { 
+  roles: ['ADMIN', 'ATENDENTE'],
+  rateLimit: { limit: 100, windowMs: 60 * 1000 } // 100 reqs/min
+})
+
+export const POST = withSecurity(async (req, session) => {
+  const body = await req.json()
+  const parsed = createPedidoSchema.safeParse(body)
   
-  if (!session?.user) {
-    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
-  }
-  if (!['ADMIN', 'ATENDENTE'].includes(session.user.role as string)) {
-    return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Campos inválidos', details: parsed.error.flatten() }, { status: 400 })
   }
 
-  try {
-    const pedidos = await pedidoService.getPedidosAtendente(session.user.id)
-    return NextResponse.json(pedidos)
-  } catch (error: any) {
-    console.error('[GET_PEDIDOS]', error)
-    return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
-  }
-}
+  const { tipo, mesaId, observacao, itens } = parsed.data
 
-export async function POST(req: Request) {
-  const session = await auth()
-  
-  if (!session?.user) {
-    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
-  }
-  if (!['ADMIN', 'ATENDENTE'].includes(session.user.role as string)) {
-    return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
-  }
+  const novoPedido = await pedidoService.create({
+    tipo,
+    mesaId,
+    observacao,
+    itens,
+    atendenteId: session.user.id
+  })
 
-  try {
-    const body = await req.json()
-    const parsed = createPedidoSchema.safeParse(body)
-    
-    if (!parsed.success) {
-      return NextResponse.json({ error: 'Campos inválidos', details: parsed.error.flatten() }, { status: 400 })
-    }
-
-    const { tipo, mesaId, observacao, itens } = parsed.data
-
-    const novoPedido = await pedidoService.create({
-      tipo,
-      mesaId,
-      observacao,
-      itens,
-      atendenteId: session.user.id
-    })
-
-    return NextResponse.json(novoPedido, { status: 201 })
-  } catch (error: any) {
-    console.error('[POST_PEDIDOS]', error)
-    
-    if (error.message.includes('BAD_REQUEST')) {
-      return NextResponse.json({ error: error.message.replace('BAD_REQUEST: ', '') }, { status: 400 })
-    }
-    
-    return NextResponse.json({ error: 'Erro ao criar pedido' }, { status: 500 })
-  }
-}
+  return NextResponse.json(novoPedido, { status: 201 })
+}, { 
+  roles: ['ADMIN', 'ATENDENTE'],
+  rateLimit: { limit: 20, windowMs: 60 * 1000 } // 20 pedidos/min (prevenção de spam)
+})

@@ -50,7 +50,7 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-[#FAFAFA] text-foreground;
     font-family: 'Inter', system-ui, sans-serif;
   }
   .theme {

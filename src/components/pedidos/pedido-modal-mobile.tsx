@@ -1,10 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Search, Minus, ShoppingBag, X, Send, AlertCircle, EyeOff } from 'lucide-react'
+import { Plus, Search, Minus, ShoppingBag, Package } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { useProdutos } from '@/hooks/use-produtos'
@@ -136,21 +135,69 @@ export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoMo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md w-full p-0 h-[100dvh] sm:h-[90vh] flex flex-col gap-0 border-none sm:rounded-xl overflow-hidden shadow-2xl bg-zinc-50">
+      <DialogContent className="flex h-[100dvh] max-h-[100dvh] w-full max-w-md flex-col gap-0 overflow-hidden border-none bg-white/70 backdrop-blur-xl p-0 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_8px_16px_-4px_rgba(0,0,0,0.02)] ring-1 ring-zinc-950/[0.04] sm:h-[90vh] sm:max-h-[90vh] sm:rounded-2xl relative">
+        <style jsx global>{`
+          ::selection {
+            background: #ffe4cc;
+            color: #9a3412;
+          }
+          @keyframes shimmer {
+            0% {
+              background-position: 0% 0%;
+            }
+            100% {
+              background-position: 140% 0%;
+            }
+          }
+          .shimmer {
+            background-image: linear-gradient(
+              90deg,
+              rgba(231, 233, 237, 0.2) 0%,
+              rgba(231, 233, 237, 0.9) 35%,
+              rgba(231, 233, 237, 0.2) 70%
+            );
+            background-size: 200% 100%;
+            animation: shimmer 1.2s ease-in-out infinite;
+          }
+          *::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+          }
+          *::-webkit-scrollbar-thumb {
+            background: rgba(228, 228, 231, 0.5);
+            border-radius: 999px;
+          }
+          *::-webkit-scrollbar-track {
+            background: transparent;
+          }
+          * {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(228, 228, 231, 0.5) transparent;
+          }
+        `}</style>
+
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] [background-position:center] opacity-[0.12]"
+        />
         
         {/* Header Fixo */}
-        <DialogHeader className="p-4 bg-white border-b border-zinc-100 flex-none space-y-4">
+        <DialogHeader className="flex-none space-y-8 border-b border-zinc-950/[0.03] bg-white/80 p-8 backdrop-blur-xl ring-1 ring-zinc-950/[0.04] sm:p-12 relative z-10">
           <div className="flex items-center justify-between">
-            <DialogTitle className="text-xl font-bold">
+            <DialogTitle className="font-sans text-xl font-semibold leading-[1.2] tracking-tight text-zinc-900">
               {pedidoEdicao ? `Editando ${pedidoEdicao.codigo}` : 'Novo Pedido'}
             </DialogTitle>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex gap-8">
             <Button 
               type="button" 
               variant={tipo === 'LOCAL' ? 'default' : 'outline'} 
-              className="flex-1"
+              className={`flex-1 rounded-2xl leading-[1.2] transition-all duration-200 ease-in-out hover:translate-y-[-2px] hover:brightness-110 active:scale-[0.97] ${
+                tipo === 'LOCAL'
+                  ? 'bg-gradient-to-r from-[#F29100] via-[#E24A07] to-[#B91C1C] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_1px_2px_rgba(0,0,0,0.05),0_8px_16px_-4px_rgba(0,0,0,0.02)] ring-1 ring-zinc-950/[0.06] hover:shadow-[0_0_20px_rgba(226,74,7,0.3)]'
+                  : 'ring-1 ring-zinc-950/[0.04] shadow-[0_1px_2px_rgba(0,0,0,0.05),0_8px_16px_-4px_rgba(0,0,0,0.02)] hover:bg-zinc-50'
+              }`}
               onClick={() => setTipo('LOCAL')}
             >
               Consumo Local
@@ -158,7 +205,11 @@ export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoMo
             <Button 
               type="button" 
               variant={tipo === 'VIAGEM' ? 'default' : 'outline'} 
-              className="flex-1"
+              className={`flex-1 rounded-2xl leading-[1.2] transition-all duration-200 ease-in-out hover:translate-y-[-2px] hover:brightness-110 active:scale-[0.97] ${
+                tipo === 'VIAGEM'
+                  ? 'bg-gradient-to-r from-[#F29100] via-[#E24A07] to-[#B91C1C] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_1px_2px_rgba(0,0,0,0.05),0_8px_16px_-4px_rgba(0,0,0,0.02)] ring-1 ring-zinc-950/[0.06] hover:shadow-[0_0_20px_rgba(226,74,7,0.3)]'
+                  : 'ring-1 ring-zinc-950/[0.04] shadow-[0_1px_2px_rgba(0,0,0,0.05),0_8px_16px_-4px_rgba(0,0,0,0.02)] hover:bg-zinc-50'
+              }`}
               onClick={() => setTipo('VIAGEM')}
             >
               Viagem
@@ -166,10 +217,10 @@ export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoMo
           </div>
 
           <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-zinc-400" />
+            <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" strokeWidth={1.5} />
             <Input 
               placeholder="Buscar chinela, chipa..." 
-              className="pl-9 h-10 bg-zinc-100 border-transparent focus-visible:bg-white" 
+              className="h-12 rounded-2xl border border-zinc-950/[0.06] bg-white pl-11 text-sm leading-[1.2] ring-1 ring-zinc-950/[0.04] transition-all duration-200 ease-in-out focus-visible:border-orange-500/30 focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-orange-500/20" 
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
             />
@@ -177,16 +228,40 @@ export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoMo
         </DialogHeader>
 
         {/* Corpo com Grid de Produtos */}
-        <div className="flex-1 overflow-y-auto p-4 pb-32">
+        <div className="relative z-10 flex-1 overflow-y-auto p-8 pb-44 sm:p-12 sm:pb-48">
           {produtos.length === 0 ? (
-             <div className="flex flex-col items-center justify-center pt-10 text-zinc-400">
-               <span className="animate-spin h-6 w-6 border-2 border-zinc-400 border-t-transparent rounded-full mb-4"></span>
-               Carregando cardápio...
+             <div className="pt-10">
+               <div className="mb-8 h-6 w-2/3 rounded-2xl shimmer" />
+               <div className="space-y-6">
+                 {Array.from({ length: 4 }).map((_, idx) => (
+                   <div
+                     key={idx}
+                     className="rounded-2xl border border-zinc-950/[0.06] bg-white p-8 ring-1 ring-zinc-950/[0.04] shadow-[0_1px_2px_rgba(0,0,0,0.05),0_8px_16px_-4px_rgba(0,0,0,0.02)]"
+                   >
+                     <div className="flex gap-8">
+                       <div className="h-16 w-16 rounded-2xl shimmer" />
+                       <div className="flex-1 space-y-4">
+                         <div className="h-4 w-3/4 rounded-2xl shimmer" />
+                         <div className="h-4 w-2/3 rounded-2xl shimmer" />
+                         <div className="mt-8 h-10 w-full rounded-2xl shimmer" />
+                       </div>
+                     </div>
+                   </div>
+                 ))}
+               </div>
+               <div className="mt-8 text-center text-[13px] font-medium leading-[1.2] tracking-tight text-zinc-500">
+                 Carregando cardápio...
+               </div>
              </div>
           ) : produtosFiltrados.length === 0 ? (
-            <div className="text-center py-10 text-zinc-500">Nenhum produto encontrado.</div>
+            <div className="rounded-2xl border border-zinc-950/[0.06] bg-white px-8 py-16 text-center shadow-[0_1px_2px_rgba(0,0,0,0.05),0_8px_16px_-4px_rgba(0,0,0,0.02)] ring-1 ring-zinc-950/[0.04]">
+              <Package className="mx-auto mb-6 h-12 w-12 text-zinc-200" strokeWidth={1} />
+              <p className="text-[13px] font-medium leading-[1.2] tracking-tight text-zinc-500">
+                Nenhum produto encontrado.
+              </p>
+            </div>
           ) : (
-            <div className="grid grid-cols-1 gap-3">
+            <div className="grid grid-cols-1 gap-8">
               {produtosFiltrados.map((prod) => {
                 const carrinhoItem = carrinho.find(c => c.produtoId === prod.id)
                 const semEstoque = prod.qtdVisor <= 0
@@ -194,52 +269,79 @@ export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoMo
                 return (
                   <div 
                     key={prod.id} 
-                    className={`flex items-center justify-between p-3 bg-white rounded-xl border ${semEstoque ? 'opacity-60 border-zinc-100 bg-zinc-50' : 'border-zinc-200'}`}
+                    className={`flex gap-8 rounded-2xl border p-8 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_8px_16px_-4px_rgba(0,0,0,0.02)] ring-1 ring-zinc-950/[0.04] transition-all duration-200 ease-in-out ${
+                      semEstoque
+                        ? 'border-zinc-950/[0.06] bg-zinc-50/80 opacity-60'
+                        : 'border-zinc-950/[0.06] bg-white hover:translate-y-[-2px] hover:bg-zinc-50/80 hover:shadow-[0_2px_4px_rgba(0,0,0,0.06),0_12px_24px_-6px_rgba(0,0,0,0.04)] active:scale-[0.97]'
+                    }`}
                   >
-                    <div className="flex-1 min-w-0 pr-3">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h4 className="font-semibold text-zinc-900 truncate">{prod.nome}</h4>
-                        {semEstoque && <Badge variant="secondary" className="text-[10px] uppercase shrink-0">Sem Estoque</Badge>}
-                      </div>
-                      <p className="text-sm font-medium text-emerald-600">{formatMoney(prod.preco)}</p>
+                    <div className="relative aspect-square w-20 shrink-0 overflow-hidden rounded-2xl border border-zinc-950/[0.06] bg-zinc-100 ring-1 ring-zinc-950/[0.04]">
+                      {prod.imagemUrl ? (
+                        <img
+                          src={prod.imagemUrl}
+                          alt=""
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-zinc-300">
+                          <Package className="h-8 w-8" strokeWidth={1} />
+                        </div>
+                      )}
                     </div>
+                    <div className="flex min-w-0 flex-1 flex-col justify-between">
+                      <div>
+                        <div className="mb-2 flex items-center gap-4">
+                          <h4 className="truncate font-medium leading-[1.2] tracking-tight text-zinc-900">{prod.nome}</h4>
+                          {semEstoque && (
+                            <span className="shrink-0 rounded-full bg-rose-50 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-rose-700 ring-1 ring-zinc-950/[0.04]">
+                              Sem estoque
+                            </span>
+                          )}
+                        </div>
+                        <p className="font-mono text-sm font-medium tabular-nums tracking-tighter leading-[1.2] text-zinc-950">{formatMoney(prod.preco)}</p>
+                      </div>
 
-                    {!semEstoque ? (
-                      <div className="flex items-center gap-3 shrink-0">
-                        {carrinhoItem && carrinhoItem.quantidade > 0 ? (
-                          <>
+                      {!semEstoque ? (
+                        <div className="mt-6 flex shrink-0 items-center justify-end gap-4">
+                          {carrinhoItem && carrinhoItem.quantidade > 0 ? (
+                            <>
+                              <Button 
+                                size="icon" 
+                                variant="outline" 
+                                className="h-10 w-10 rounded-full border border-zinc-950/[0.06] bg-white text-zinc-500 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_8px_16px_-4px_rgba(0,0,0,0.02)] ring-1 ring-zinc-950/[0.04] transition-all duration-200 ease-in-out hover:translate-y-[-2px] hover:bg-zinc-50 hover:text-[#B91C1C] hover:brightness-110 active:scale-[0.97]"
+                                onClick={() => handleDecreaseFromCart(prod.id)}
+                              >
+                                <Minus className="h-4 w-4" strokeWidth={1.5} />
+                              </Button>
+                              <span className="min-w-[1.5rem] text-center font-mono text-lg font-semibold tabular-nums tracking-tighter leading-[1.2] text-zinc-950">
+                                {carrinhoItem.quantidade}
+                              </span>
+                              <Button 
+                                size="icon" 
+                                variant="outline" 
+                                className="h-10 w-10 rounded-full border border-zinc-950/[0.06] bg-white text-zinc-600 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_8px_16px_-4px_rgba(0,0,0,0.02)] ring-1 ring-zinc-950/[0.04] transition-all duration-200 ease-in-out hover:translate-y-[-2px] hover:bg-zinc-50 hover:brightness-110 active:scale-[0.97]"
+                                onClick={() => handleAddToCart(prod)}
+                              >
+                                <Plus className="h-4 w-4" strokeWidth={1.5} />
+                              </Button>
+                            </>
+                          ) : (
                             <Button 
-                              size="icon" 
-                              variant="outline" 
-                              className="h-10 w-10 rounded-full bg-zinc-50 hover:bg-zinc-100 hover:text-red-500"
-                              onClick={() => handleDecreaseFromCart(prod.id)}
-                            >
-                              <Minus className="h-4 w-4" />
-                            </Button>
-                            <span className="w-6 text-center font-bold text-lg">{carrinhoItem.quantidade}</span>
-                            <Button 
-                              size="icon" 
-                              variant="outline" 
-                              className="h-10 w-10 rounded-full bg-zinc-50 hover:bg-zinc-100 hover:text-emerald-500"
+                              className="h-11 rounded-full bg-gradient-to-r from-[#F29100] via-[#E24A07] to-[#B91C1C] px-8 font-semibold leading-[1.2] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_1px_2px_rgba(0,0,0,0.05),0_8px_16px_-4px_rgba(0,0,0,0.02)] ring-1 ring-zinc-950/[0.06] transition-all duration-200 ease-in-out hover:translate-y-[-2px] hover:brightness-110 hover:shadow-[0_0_20px_rgba(226,74,7,0.3)] active:scale-[0.97]"
                               onClick={() => handleAddToCart(prod)}
                             >
-                              <Plus className="h-4 w-4" />
+                              <Plus className="mr-1 h-4 w-4" strokeWidth={1.5} /> Add
                             </Button>
-                          </>
-                        ) : (
-                          <Button 
-                            className="h-10 px-4 rounded-full font-semibold"
-                            onClick={() => handleAddToCart(prod)}
-                          >
-                            <Plus className="h-4 w-4 mr-1" /> Add
+                          )}
+                        </div>
+                      ) : (
+                        <div className="mt-4 flex justify-end">
+                          <Button disabled className="h-10 rounded-full bg-zinc-200/80 text-zinc-500">
+                            Esgotado
                           </Button>
-                        )}
-                      </div>
-                    ) : (
-                      <Button disabled className="h-10 px-4 rounded-full bg-zinc-300">
-                        Esgotado
-                      </Button>
-                    )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )
               })}
@@ -247,34 +349,39 @@ export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoMo
           )}
 
           {/* Campo observação opcional */}
-          <div className="mt-6 space-y-2">
-            <h4 className="font-medium text-sm text-zinc-600">Observações adicionais:</h4>
+          <div className="mt-12 space-y-8">
+            <h4 className="text-[13px] font-medium leading-[1.2] text-zinc-500">Observações adicionais</h4>
             <Textarea 
               placeholder="Ex: Assar bem a chipa, separadas..." 
               value={observacao}
               onChange={e => setObservacao(e.target.value)}
-              className="resize-none"
+              className="min-h-[96px] resize-none rounded-2xl border border-zinc-950/[0.06] bg-white text-sm leading-[1.2] ring-1 ring-zinc-950/[0.04] transition-all duration-200 ease-in-out focus-visible:border-orange-500/30 focus-visible:ring-2 focus-visible:ring-orange-500/20"
             />
           </div>
         </div>
 
         {/* Rodapé (Sticky Footer / Carrinho) */}
         {carrinho.length > 0 && (
-          <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-zinc-200 p-4 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]">
-            <div className="flex justify-between items-center mb-4">
-              <div className="flex items-center gap-2">
-                <div className="bg-zinc-100 p-2 rounded-full">
-                  <ShoppingBag className="h-5 w-5 text-zinc-900" />
+          <div className="absolute bottom-0 left-0 right-0 border-t border-zinc-950/[0.03] bg-white/80 p-8 shadow-[0_-8px_24px_-6px_rgba(0,0,0,0.06)] backdrop-blur-[12px] ring-1 ring-zinc-950/[0.04] sm:p-12 relative z-10">
+            <div className="mb-8 flex items-start justify-between gap-8">
+              <div className="flex min-w-0 flex-1 items-start gap-8">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-zinc-100 ring-1 ring-zinc-950/[0.04]">
+                  <ShoppingBag className="h-5 w-5 text-zinc-900" strokeWidth={1} />
                 </div>
-                <div>
-                  <p className="text-xs text-zinc-500 font-medium">{carrinho.length} itens no pedido</p>
-                  <p className="text-lg font-bold text-zinc-900">{formatMoney(totalCarrinho)}</p>
+                <div className="min-w-0 flex-1 space-y-1">
+                  <p className="text-[13px] font-medium leading-[1.2] text-zinc-500">Pedido</p>
+                  <p className="truncate text-[13px] font-medium leading-[1.2] text-zinc-600">
+                    {carrinho.length} {carrinho.length === 1 ? 'item' : 'itens'}
+                  </p>
+                  <p className="font-mono text-2xl font-semibold tabular-nums tracking-tighter leading-[1.2] text-zinc-950 sm:text-3xl">
+                    {formatMoney(totalCarrinho)}
+                  </p>
                 </div>
               </div>
             </div>
 
             <Button 
-              className="w-full h-12 text-base font-bold" 
+              className="h-14 w-full rounded-2xl bg-gradient-to-r from-[#F29100] via-[#E24A07] to-[#B91C1C] font-sans text-base font-semibold leading-[1.2] tracking-tight text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_1px_2px_rgba(0,0,0,0.05),0_8px_16px_-4px_rgba(0,0,0,0.02)] ring-1 ring-zinc-950/[0.06] transition-all duration-200 ease-in-out hover:translate-y-[-2px] hover:brightness-110 hover:shadow-[0_0_20px_rgba(226,74,7,0.3)] active:scale-[0.97] disabled:opacity-60"
               onClick={handleSavePedido}
               disabled={isSubmitting}
             >

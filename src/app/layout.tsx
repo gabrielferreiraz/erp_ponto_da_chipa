@@ -20,7 +20,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR">
-      <body className={cn("font-sans antialiased min-h-screen", inter.className)}>
+      <body
+        className={cn(
+          'min-h-screen bg-[#FAFAFA] font-sans antialiased text-zinc-900',
+          inter.className
+        )}
+      >
         {children}
         <Toaster richColors position="top-right" />
       </body>

@@ -8,13 +8,15 @@ datasource db {
 }
 
 model Usuario {
-  id        String   @id @default(cuid())
-  nome      String
-  email     String   @unique
-  senha     String
-  role      Role     @default(ATENDENTE)
-  ativo     Boolean  @default(true)
-  criadoEm DateTime @default(now())
+  id            String    @id @default(cuid())
+  nome          String
+  email         String    @unique
+  senha         String
+  role          Role      @default(ATENDENTE)
+  ativo         Boolean   @default(true)
+  emailVerified DateTime?
+  sessionVersion Int      @default(0)
+  criadoEm      DateTime  @default(now())
 
   pedidosCriados   Pedido[]              @relation("AtendentePedido")
   pedidosFechados  Pedido[]              @relation("CaixaPedido")
@@ -23,6 +25,28 @@ model Usuario {
   fechamentosTurno ShiftClosing[]
 
   @@map("usuarios")
+}
+
+model VerificationToken {
+  id      String   @id @default(cuid())
+  email   String
+  tokenHash String @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@map("verification_tokens")
+}
+
+model PasswordResetToken {
+  id      String   @id @default(cuid())
+  email   String
+  tokenHash String @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@map("password_reset_tokens")
 }
 
 enum Role {
