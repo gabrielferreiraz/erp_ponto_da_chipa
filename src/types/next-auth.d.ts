@@ -4,7 +4,7 @@ import 'next-auth/jwt'
 declare module 'next-auth' {
   interface User {
     id: string
-    role: 'ADMIN' | 'CAIXA' | 'ATENDENTE'
+    role: string
     nome: string
     sessionVersion: number
   }
@@ -12,9 +12,10 @@ declare module 'next-auth' {
   interface Session {
     user: {
       id: string
-      email: string
-      role: 'ADMIN' | 'CAIXA' | 'ATENDENTE'
+      email?: string | null
+      role: string
       nome: string
+      sessionVersion: number
     }
   }
 }
@@ -22,7 +23,7 @@ declare module 'next-auth' {
 declare module 'next-auth/jwt' {
   interface JWT {
     id: string
-    role: 'ADMIN' | 'CAIXA' | 'ATENDENTE'
+    role: string
     nome: string
     sessionVersion: number
   }

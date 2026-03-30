@@ -1,4 +1,4 @@
-import type { NextAuthConfig } from 'next-auth'
+import type { NextAuthConfig, User } from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
@@ -37,7 +37,7 @@ export const authConfig: NextAuthConfig = {
 
         const { email, senha } = parsed.data
 
-        const usuario = await prisma.usuario.findUnique({
+        const usuario = (await prisma.usuario.findUnique({
           where: { email },
           select: {
             id: true,
@@ -48,8 +48,8 @@ export const authConfig: NextAuthConfig = {
             ativo: true,
             emailVerified: true,
             sessionVersion: true,
-          },
-        })
+          } as any,
+        })) as any
 
         if (!usuario) {
           SecurityLogger.log({ event: 'LOGIN_FAILURE', route, ip, details: 'Credenciais inválidas' })
@@ -80,13 +80,15 @@ export const authConfig: NextAuthConfig = {
           role: usuario.role 
         })
 
-        return {
-          id: usuario.id,
-          nome: usuario.nome,
-          email: usuario.email,
-          role: usuario.role,
-          sessionVersion: usuario.sessionVersion,
+        const authUser: User = {
+          id: String(usuario.id),
+          nome: String(usuario.nome),
+          email: String(usuario.email),
+          role: String(usuario.role),
+          sessionVersion: Number(usuario.sessionVersion),
         }
+
+        return authUser
       },
     }),
   ],
@@ -95,14 +97,14 @@ export const authConfig: NextAuthConfig = {
     async jwt({ token, user }) {
       // Adiciona role, id e nome ao token JWT na primeira autenticação
       if (user) {
-        token.id = user.id as string
+        token.id = user.id
         token.role = user.role
         token.nome = user.nome
         token.sessionVersion = user.sessionVersion
       }
 
       if (token.id) {
-        const dbUser = await prisma.usuario.findUnique({
+        const dbUser = (await prisma.usuario.findUnique({
           where: { id: token.id as string },
           select: {
             id: true,
@@ -111,8 +113,8 @@ export const authConfig: NextAuthConfig = {
             ativo: true,
             emailVerified: true,
             sessionVersion: true,
-          },
-        })
+          } as any,
+        })) as any
 
         if (
           !dbUser ||
@@ -120,7 +122,11 @@ export const authConfig: NextAuthConfig = {
           !dbUser.emailVerified ||
           dbUser.sessionVersion !== token.sessionVersion
         ) {
-          return {}
+          token.id = ''
+          token.role = ''
+          token.nome = ''
+          token.sessionVersion = 0
+          return token
         }
 
         token.nome = dbUser.nome
@@ -131,15 +137,12 @@ export const authConfig: NextAuthConfig = {
       return token
     },
     async session({ session, token }) {
-      if (!token?.id || !token?.role || !token?.nome) {
-        return null
-      }
-
       // R3: Role SEMPRE vem do token, nunca do body
-      if (token) {
+      if (token?.id && token?.role && token?.nome) {
         session.user.id = token.id as string
-        session.user.role = token.role as 'ADMIN' | 'CAIXA' | 'ATENDENTE'
+        session.user.role = token.role as any
         session.user.nome = token.nome as string
+        session.user.sessionVersion = token.sessionVersion as number
       }
       return session
     },
