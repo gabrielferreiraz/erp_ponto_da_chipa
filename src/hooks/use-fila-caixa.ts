@@ -23,8 +23,10 @@ const fetchFila = async (url: string) => {
 
 export function useFilaCaixa() {
   const { data, error, isLoading, mutate } = useSWR<FilaPedidoFrontend[]>('/api/caixa/fila', fetchFila, {
-    // SWR não precisa de polling pq usaremos o EventSource que empurrará os recarregamentos (Realtime limpo).
-    revalidateOnFocus: true
+    // SWR usa Realtime via SSE, mas deixamos um polling leve (10s) de segurança caso o SSE falhe/bufferize na rede.
+    revalidateOnFocus: true,
+    refreshInterval: 10000, 
+    dedupingInterval: 2000, // Evita múltiplos fetches se o SSE e o polling dispararem juntos
   })
 
   useEffect(() => {

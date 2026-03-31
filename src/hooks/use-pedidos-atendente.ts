@@ -28,8 +28,10 @@ const fetcher = async (url: string) => {
 
 export function usePedidosAtendente() {
   const { data, error, isLoading, mutate } = useSWR<PedidoFrontend[]>('/api/pedidos', fetcher, {
-    // SWR não precisa de polling pesado pois usaremos o EventSource que empurrará os recarregamentos (Realtime UI).
-    revalidateOnFocus: true
+    // SWR usa Realtime via SSE, mas deixamos um polling leve (10s) de segurança caso o SSE falhe/bufferize na rede.
+    revalidateOnFocus: true,
+    refreshInterval: 10000, 
+    dedupingInterval: 2000, // Evita múltiplos fetches se o SSE e o polling dispararem juntos
   })
 
   useEffect(() => {
