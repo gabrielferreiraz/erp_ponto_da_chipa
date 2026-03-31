@@ -135,7 +135,7 @@ export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoMo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex h-[100dvh] max-h-[100dvh] w-full max-w-md flex-col gap-0 overflow-hidden border-none bg-white/70 backdrop-blur-xl p-0 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_8px_16px_-4px_rgba(0,0,0,0.02)] ring-1 ring-zinc-950/[0.04] sm:h-[90vh] sm:max-h-[90vh] sm:rounded-2xl relative">
+      <DialogContent className="max-w-2xl w-full h-[90vh] sm:h-[80vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl">
         <style jsx global>{`
           ::selection {
             background: #ffe4cc;
@@ -182,12 +182,11 @@ export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoMo
         />
         
         {/* Header Fixo */}
-        <DialogHeader className="flex-none space-y-8 border-b border-zinc-950/[0.03] bg-white/80 p-8 backdrop-blur-xl ring-1 ring-zinc-950/[0.04] sm:p-12 relative z-10">
-          <div className="flex items-center justify-between">
-            <DialogTitle className="font-sans text-xl font-semibold leading-[1.2] tracking-tight text-zinc-900">
-              {pedidoEdicao ? `Editando ${pedidoEdicao.codigo}` : 'Novo Pedido'}
-            </DialogTitle>
-          </div>
+        <DialogHeader className="px-6 py-4 border-b bg-white shrink-0">
+          <DialogTitle className="flex items-center gap-2 text-zinc-900">
+            <ShoppingBag className="w-5 h-5 text-red-600" />
+            {pedidoEdicao ? 'Editar Pedido' : 'Novo Pedido'}
+          </DialogTitle>
 
           <div className="flex gap-8">
             <Button 

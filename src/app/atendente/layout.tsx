@@ -1,6 +1,8 @@
 import { auth } from '@/lib/auth-instance'
 import { redirect } from 'next/navigation'
 import type { Metadata } from 'next'
+import { ChefHat, LogOut, UserCircle } from 'lucide-react'
+import { logoutAction } from '@/actions/auth'
 
 export const metadata: Metadata = {
   title: 'Atendimento — Ponto da Chipa',
@@ -15,30 +17,43 @@ export default async function AtendenteLayout({ children }: { children: React.Re
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50">
-      <div className="flex h-screen">
-        <aside className="w-64 bg-white border-r border-zinc-200 flex-shrink-0">
-          <div className="p-6 border-b border-zinc-100">
-            <h1 className="font-bold text-lg text-amber-600">Ponto da Chipa</h1>
-            <p className="text-xs text-zinc-500 mt-0.5">Atendimento</p>
-          </div>
-          <nav className="p-4 space-y-1">
-            <a href="/atendente/pedidos"
-               className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-zinc-700 hover:bg-amber-50 hover:text-amber-700 transition-colors">
-              Meus Pedidos
-            </a>
-          </nav>
-          <div className="absolute bottom-4 left-4 right-4">
-            <div className="px-3 py-2 rounded-lg bg-amber-50 border border-amber-100">
-              <p className="text-xs font-medium text-amber-800">{session.user.nome}</p>
-              <p className="text-xs text-amber-600">Atendente</p>
+    <div className="min-h-screen bg-zinc-50 flex flex-col">
+      {/* Header Responsivo (Substitui a Sidebar) */}
+      <header className="sticky top-0 z-40 w-full bg-white border-b border-zinc-200 shadow-sm">
+        <div className="mx-auto max-w-[1600px] px-4 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="bg-red-600 rounded-lg p-1.5 shadow-sm">
+              <ChefHat className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h1 className="font-black text-sm text-zinc-900 tracking-tighter uppercase leading-none">Ponto da Chipa</h1>
+              <p className="text-[10px] font-bold text-red-600 uppercase tracking-widest mt-0.5">Atendimento</p>
             </div>
           </div>
-        </aside>
-        <main className="flex-1 overflow-auto">
-          {children}
-        </main>
-      </div>
+
+          <div className="flex items-center gap-4">
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-100 border border-zinc-200">
+              <UserCircle className="w-4 h-4 text-zinc-500" />
+              <span className="text-xs font-semibold text-zinc-700">{session.user.nome}</span>
+            </div>
+            
+            <form action={logoutAction}>
+              <button 
+                type="submit"
+                className="p-2 rounded-xl hover:bg-red-50 text-zinc-400 hover:text-red-600 transition-colors"
+                title="Sair"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
+            </form>
+          </div>
+        </div>
+      </header>
+
+      {/* Conteúdo Principal */}
+      <main className="flex-1 w-full mx-auto max-w-[1600px]">
+        {children}
+      </main>
     </div>
   )
 }
