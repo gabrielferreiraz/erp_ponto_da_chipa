@@ -28,6 +28,7 @@ RUN apk add --no-cache libc6-compat openssl postgresql-client
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV UV_THREADPOOL_SIZE=4
 
 RUN addgroup -S nodejs && adduser -S nextjs -G nodejs
 

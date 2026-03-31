@@ -2,6 +2,8 @@
 const nextConfig = {
   // Necessário para Docker com standalone output
   output: 'standalone',
+  compress: true,
+  poweredByHeader: false,
 
   eslint: {
     // Ignora erros de linting durante o build para agilizar o deploy,
