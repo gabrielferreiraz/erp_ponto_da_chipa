@@ -17,33 +17,31 @@ export default async function AtendenteLayout({ children }: { children: React.Re
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 flex flex-col">
+    <div className="min-h-screen bg-[#FAFAFA] flex flex-col font-sans">
       {/* Header Responsivo (Substitui a Sidebar) */}
-      <header className="sticky top-0 z-40 w-full bg-white border-b border-zinc-200 shadow-sm">
-        <div className="mx-auto max-w-[1600px] px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="bg-red-600 rounded-lg p-1.5 shadow-sm">
-              <ChefHat className="w-5 h-5 text-white" />
-            </div>
+      <header className="sticky top-0 z-40 w-full min-h-[64px] bg-white/70 backdrop-blur-md border-b border-zinc-950/[0.06] shadow-sm">
+        <div className="mx-auto max-w-[1600px] px-6 md:px-12 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <ChefHat className="w-5 h-5 text-zinc-900" strokeWidth={1.5} />
             <div>
-              <h1 className="font-black text-sm text-zinc-900 tracking-tighter uppercase leading-none">Ponto da Chipa</h1>
-              <p className="text-[10px] font-bold text-red-600 uppercase tracking-widest mt-0.5">Atendimento</p>
+              <h1 className="font-semibold text-[15px] text-zinc-900 tracking-tighter leading-none">Ponto da Chipa</h1>
+              <p className="text-[11px] font-medium text-zinc-500 uppercase tracking-widest mt-0.5">Atendimento</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-100 border border-zinc-200">
-              <UserCircle className="w-4 h-4 text-zinc-500" />
-              <span className="text-xs font-semibold text-zinc-700">{session.user.nome}</span>
+          <div className="flex items-center gap-6">
+            <div className="hidden sm:flex items-center gap-2">
+              <UserCircle className="w-4 h-4 text-zinc-400" strokeWidth={1.5} />
+              <span className="text-[13px] font-medium tracking-tight text-zinc-600">{session.user.nome}</span>
             </div>
             
             <form action={logoutAction}>
               <button 
                 type="submit"
-                className="p-2 rounded-xl hover:bg-red-50 text-zinc-400 hover:text-red-600 transition-colors"
+                className="flex items-center justify-center w-9 h-9 rounded-full ring-1 ring-zinc-950/[0.06] text-zinc-400 hover:text-red-600 hover:bg-red-50 hover:ring-red-100 transition-all active:scale-[0.96]"
                 title="Sair"
               >
-                <LogOut className="w-5 h-5" />
+                <LogOut className="w-4 h-4" strokeWidth={1.5} />
               </button>
             </form>
           </div>

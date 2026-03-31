@@ -59,7 +59,7 @@ export default function PedidosAtendentePage() {
   const pedidosAguardando = pedidos.filter(p => p.orderStatus === 'AGUARDANDO_COBRANCA')
 
   return (
-    <div className="min-h-screen bg-zinc-50 p-8 sm:p-12 lg:p-16 max-w-[1600px] mx-auto space-y-12 transition-all duration-200 ease-in-out">
+    <div className="min-h-screen bg-[#FAFAFA] p-6 sm:p-10 lg:p-14 max-w-[1600px] mx-auto space-y-12 transition-all duration-200 ease-in-out font-sans">
       {/* Header Premium */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
         <div className="flex items-center gap-6">
@@ -78,7 +78,7 @@ export default function PedidosAtendentePage() {
 
         <button 
           onClick={() => { setEditingPedido(null); setModalOpen(true); }}
-          className="group relative flex items-center justify-center gap-3 h-14 px-10 rounded-2xl bg-gradient-to-br from-[#F29100] via-[#E24A07] to-[#B91C1C] text-white font-bold text-sm tracking-tight shadow-[0_1px_2px_rgba(0,0,0,0.05),0_8px_16px_-4px_rgba(0,0,0,0.02),inset_0_1px_0_rgba(255,255,255,0.2)] transition-all duration-200 ease-in-out hover:opacity-95 hover:shadow-xl active:scale-[0.97] w-full md:w-auto"
+          className="group relative flex items-center justify-center gap-2.5 h-12 md:h-14 px-8 md:px-10 rounded-2xl bg-gradient-to-r from-[#F29100] via-[#E24A07] to-[#B91C1C] text-white font-bold text-[13px] md:text-sm tracking-tight shadow-[inset_0_2px_4px_rgba(255,255,255,0.3),0_4px_12px_rgba(226,74,7,0.3)] transition-all duration-200 ease-in-out hover:opacity-95 hover:shadow-[inset_0_2px_4px_rgba(255,255,255,0.4),0_8px_24px_rgba(226,74,7,0.4)] active:scale-[0.97] w-full md:w-auto ring-1 ring-zinc-950/[0.04]"
         >
           <Plus className="w-5 h-5 transition-transform duration-300 group-hover:rotate-90" strokeWidth={2.5} />
           NOVO PEDIDO
@@ -140,7 +140,7 @@ export default function PedidosAtendentePage() {
                   <div 
                     key={pedido.id}
                     onClick={() => handleEdit(pedido)}
-                    className="group bg-white border border-zinc-200/50 rounded-2xl p-8 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_8px_16px_-4px_rgba(0,0,0,0.02)] transition-all duration-300 ease-in-out hover:shadow-xl hover:border-zinc-300/50 cursor-pointer active:scale-[0.98] flex flex-col justify-between min-h-[240px]"
+                    className="group bg-white ring-1 ring-zinc-950/[0.04] rounded-[24px] p-8 lg:p-10 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_8px_16px_-4px_rgba(0,0,0,0.02)] transition-all duration-300 ease-in-out hover:shadow-[0_2px_4px_rgba(0,0,0,0.06),0_12px_24px_-6px_rgba(0,0,0,0.04)] hover:-translate-y-1 hover:ring-zinc-950/[0.08] cursor-pointer active:scale-[0.98] flex flex-col justify-between min-h-[260px]"
                   >
                     <div className="space-y-6">
                       <div className="flex justify-between items-start">
@@ -181,9 +181,9 @@ export default function PedidosAtendentePage() {
                       <button 
                         onClick={(e) => handleConfirmOrder(pedido.id, e)}
                         disabled={confirmingId === pedido.id}
-                        className="h-11 px-8 rounded-xl bg-zinc-900 text-white font-bold text-[11px] uppercase tracking-[0.1em] transition-all duration-300 hover:bg-[#B91C1C] hover:shadow-lg active:scale-95 disabled:opacity-50"
+                        className="h-12 px-8 rounded-full bg-zinc-900 text-white font-bold text-[11px] uppercase tracking-widest transition-all duration-300 hover:bg-[#B91C1C] hover:shadow-[0_4px_12px_rgba(185,28,28,0.3)] active:scale-[0.96] disabled:opacity-50 hitbox-48 relative"
                       >
-                        {confirmingId === pedido.id ? <Loader2 className="w-4 h-4 animate-spin" /> : 'FECHAR'}
+                        {confirmingId === pedido.id ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'FECHAR'}
                       </button>
                     </div>
                   </div>
@@ -239,7 +239,7 @@ export default function PedidosAtendentePage() {
               </div>
             ) : (
               pedidosCaixa.map(pedido => (
-                <div key={pedido.id} className="group bg-white border border-zinc-200/50 rounded-2xl p-8 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_8px_16px_-4px_rgba(0,0,0,0.02)] border-l-[6px] border-l-[#B91C1C] transition-all duration-300 hover:shadow-xl hover:bg-zinc-50/50">
+                <div key={pedido.id} className="group bg-white ring-1 ring-zinc-950/[0.04] rounded-[24px] p-8 lg:p-10 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_8px_16px_-4px_rgba(0,0,0,0.02)] border-l-[6px] border-l-orange-500 transition-all duration-300 hover:shadow-[0_2px_4px_rgba(0,0,0,0.06),0_12px_24px_-6px_rgba(0,0,0,0.04)] hover:-translate-y-1">
                   <div className="flex justify-between items-start mb-8">
                     <span className="font-mono text-xs font-bold text-zinc-900 tracking-tighter tabular-nums uppercase">{pedido.codigo}</span>
                     <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-tighter">{formatTime(pedido.criadoEm)}</span>
