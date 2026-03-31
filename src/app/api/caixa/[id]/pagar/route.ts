@@ -35,6 +35,6 @@ export const POST = withSecurity(async (req, session, { params }) => {
 
   return NextResponse.json(pedidoPago, { status: 200 })
 }, { 
-  roles: ['ADMIN', 'CAIXA'],
+  roles: ['ADMIN', 'CAIXA', 'ATENDENTE'],
   rateLimit: { limit: 20, windowMs: 60 * 1000 }
 })

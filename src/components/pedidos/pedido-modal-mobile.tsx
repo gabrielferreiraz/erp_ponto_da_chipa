@@ -348,7 +348,7 @@ export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoMo
           <div className="flex items-center justify-between mb-4">
             <div className="space-y-0.5">
               <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500">Total do Pedido</p>
-              <p className="font-mono text-[22px] font-bold tabular-nums tracking-tighter text-zinc-900">
+              <p className="font-mono text-[24px] font-black tabular-nums tracking-tighter text-zinc-900">
                 {formatMoney(totalCarrinho)}
               </p>
             </div>
@@ -359,11 +359,11 @@ export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoMo
 
           <button 
             type="button"
-            className="w-full h-[52px] rounded-xl bg-gradient-to-r from-[#F29100] via-[#E24A07] to-[#B91C1C] flex items-center justify-center text-[15px] font-bold tracking-tight text-white shadow-[inset_0_2px_4px_rgba(255,255,255,0.3),0_4px_12px_rgba(226,74,7,0.3)] transition-all active:scale-[0.98] disabled:opacity-50"
+            className="w-full h-[56px] rounded-2xl bg-gradient-to-r from-[#F29100] via-[#E24A07] to-[#B91C1C] flex items-center justify-center text-[15px] font-black uppercase tracking-widest text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_8px_24px_rgba(226,74,7,0.35),0_2px_8px_rgba(0,0,0,0.1)] transition-all active:scale-[0.98] disabled:opacity-50 mt-4 sm:mt-6"
             onClick={handleSavePedido}
             disabled={isSubmitting}
           >
-            {isSubmitting ? 'Salvando...' : (pedidoEdicao ? 'Salvar Edição' : 'Confirmar Pedido')}
+            {isSubmitting ? 'SALVANDO...' : (pedidoEdicao ? 'SALVAR EDIÇÃO' : 'ENVIAR PEDIDO')}
           </button>
         </div>
       )}

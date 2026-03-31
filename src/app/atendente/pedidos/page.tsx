@@ -1,24 +1,26 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Clock, MapPin, Package, ArrowRight, ShoppingBag, Banknote, Loader2, UserCircle, ChefHat } from 'lucide-react'
+import { Plus, Clock, MapPin, Package, ShoppingBag, Banknote, Loader2, UserCircle, ChefHat } from 'lucide-react'
 import { PedidoModalMobile } from '@/components/pedidos/pedido-modal-mobile'
 import { usePedidosAtendente, PedidoFrontend } from '@/hooks/use-pedidos-atendente'
-import { useFilaCaixa } from '@/hooks/use-fila-caixa'
-import { Button } from '@/components/ui/button'
+import { useFilaCaixa, FilaPedidoFrontend } from '@/hooks/use-fila-caixa'
+import { ModalPagamento } from '@/components/caixa/modal-pagamento'
 import { toast } from 'sonner'
 import { formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { motion, AnimatePresence } from 'framer-motion'
 
 export default function PedidosAtendentePage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editingPedido, setEditingPedido] = useState<PedidoFrontend | null>(null)
   const { pedidos, isLoading: loadingPedidos, mutate: mutatePedidos } = usePedidosAtendente()
   const { fila: pedidosCaixa, isLoading: loadingCaixa } = useFilaCaixa()
+  const [activeFilter, setActiveFilter] = useState<'meus' | 'caixa'>('meus')
 
   const [confirmingId, setConfirmingId] = useState<string | null>(null)
+  const [pagarPedido, setPagarPedido] = useState<FilaPedidoFrontend | null>(null)
 
   const handleEdit = (pedido: PedidoFrontend) => {
     if (pedido.orderStatus !== 'ABERTO') {
@@ -54,228 +56,256 @@ export default function PedidosAtendentePage() {
 
   const formatMoney = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val)
   const formatTime = (date: Date | string) => formatDistanceToNow(new Date(date), { addSuffix: true, locale: ptBR })
+  
+  const getTimerColor = (criadoEm: Date | string) => {
+    const minDiff = (new Date().getTime() - new Date(criadoEm).getTime()) / 1000 / 60
+    if (minDiff > 20) return 'text-[#B91C1C]' // Atrasado (Carmesim)
+    if (minDiff > 10) return 'text-orange-600' // Alerta (Amarelo/Laranja)
+    return 'text-emerald-600' // Recente (Verde/Zinco)
+  }
 
   const pedidosAbertos = pedidos.filter(p => p.orderStatus === 'ABERTO')
-  const pedidosAguardando = pedidos.filter(p => p.orderStatus === 'AGUARDANDO_COBRANCA')
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] p-6 sm:p-10 lg:p-14 max-w-[1600px] mx-auto space-y-12 transition-all duration-200 ease-in-out font-sans">
-      {/* Header Premium */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
-        <div className="flex items-center gap-6">
-          <div className="bg-white p-4 rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05),0_8px_16px_-4px_rgba(0,0,0,0.02)] border border-zinc-200/50">
-            <ChefHat className="w-10 h-10 text-[#B91C1C]" strokeWidth={1.2} />
+    <div className="min-h-screen bg-[#FAFAFA] p-4 sm:p-6 lg:p-14 max-w-[1600px] mx-auto transition-all duration-200 ease-in-out font-sans overflow-x-hidden pb-40">
+      
+      {/* Header Compacto com Filtros Interativos (Chips) */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 mt-2">
+        <div className="flex items-center gap-4">
+          <div className="bg-white p-3 rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05),0_4px_8px_-2px_rgba(0,0,0,0.02)] border border-zinc-200/50">
+            <ChefHat className="w-8 h-8 text-[#B91C1C]" strokeWidth={1.5} />
           </div>
-          <div className="space-y-1">
-            <h1 className="font-sans text-4xl font-semibold tracking-tight text-zinc-900 leading-[1.1]">
-              Pedidos
+          <div>
+            <h1 className="font-sans text-2xl font-bold tracking-tight text-zinc-900 leading-tight">
+              Visão Operacional
             </h1>
-            <p className="text-[13px] font-medium text-zinc-400 uppercase tracking-[0.2em]">
-              Fluxo Operacional
-            </p>
           </div>
         </div>
 
-        <button 
-          onClick={() => { setEditingPedido(null); setModalOpen(true); }}
-          className="group relative flex items-center justify-center gap-2.5 h-12 md:h-14 px-8 md:px-10 rounded-2xl bg-gradient-to-r from-[#F29100] via-[#E24A07] to-[#B91C1C] text-white font-bold text-[13px] md:text-sm tracking-tight shadow-[inset_0_2px_4px_rgba(255,255,255,0.3),0_4px_12px_rgba(226,74,7,0.3)] transition-all duration-200 ease-in-out hover:opacity-95 hover:shadow-[inset_0_2px_4px_rgba(255,255,255,0.4),0_8px_24px_rgba(226,74,7,0.4)] active:scale-[0.97] w-full md:w-auto ring-1 ring-zinc-950/[0.04]"
-        >
-          <Plus className="w-5 h-5 transition-transform duration-300 group-hover:rotate-90" strokeWidth={2.5} />
-          NOVO PEDIDO
-        </button>
-      </div>
-
-      <Tabs defaultValue="meus" className="w-full space-y-12">
-        {/* Navegação de Abas Premium - Pill Style */}
-        <TabsList className="flex items-center gap-2 bg-zinc-200/30 p-1.5 rounded-2xl w-fit border border-zinc-200/50 backdrop-blur-sm">
-          <TabsTrigger 
-            value="meus" 
-            className="px-6 py-2.5 rounded-xl font-medium text-sm text-zinc-500 transition-all duration-200 data-[state=active]:bg-white data-[state=active]:text-zinc-900 data-[state=active]:shadow-[0_2px_4px_rgba(0,0,0,0.05)] data-[state=active]:border data-[state=active]:border-zinc-200/50 hover:text-zinc-700"
+        {/* Chips de Filtro */}
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-1">
+          <button 
+            onClick={() => setActiveFilter('meus')}
+            className={cn(
+              "flex items-center gap-2 px-5 py-2.5 rounded-full border transition-all duration-300 min-w-fit",
+              activeFilter === 'meus' 
+                ? "bg-white border-zinc-200/80 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] text-zinc-900 ring-1 ring-zinc-950/[0.03]" 
+                : "bg-transparent border-transparent text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100/50"
+            )}
           >
-            Meus Pedidos 
-            <span className="ml-2.5 px-2 py-0.5 rounded-full bg-zinc-100 text-[10px] font-bold text-zinc-400 tabular-nums">
-              {pedidosAbertos.length + pedidosAguardando.length}
+            <span className="text-[13px] font-bold uppercase tracking-widest">Em Aberto</span>
+            <span className={cn(
+              "flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full font-mono text-[10px] font-black tabular-nums tracking-tighter transition-colors",
+              activeFilter === 'meus' ? "bg-zinc-100 text-zinc-600" : "bg-zinc-200/50 text-zinc-400"
+            )}>
+              {pedidosAbertos.length}
             </span>
-          </TabsTrigger>
-          <TabsTrigger 
-            value="caixa" 
-            className="px-6 py-2.5 rounded-xl font-medium text-sm text-zinc-500 transition-all duration-200 data-[state=active]:bg-white data-[state=active]:text-zinc-900 data-[state=active]:shadow-[0_2px_4px_rgba(0,0,0,0.05)] data-[state=active]:border data-[state=active]:border-zinc-200/50 hover:text-zinc-700"
+          </button>
+
+          <button 
+            onClick={() => setActiveFilter('caixa')}
+            className={cn(
+              "flex items-center gap-2 px-5 py-2.5 rounded-full border transition-all duration-300 min-w-fit",
+              activeFilter === 'caixa' 
+                ? "bg-orange-50 border-orange-200/60 shadow-[0_2px_8px_-2px_rgba(234,88,12,0.1)] text-orange-700 ring-1 ring-orange-950/[0.03]" 
+                : "bg-transparent border-transparent text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100/50"
+            )}
           >
-            Fila do Caixa
-            <span className="ml-2.5 px-2 py-0.5 rounded-full bg-zinc-100 text-[10px] font-bold text-zinc-400 tabular-nums">
+            <Banknote className={cn("w-4 h-4", activeFilter === 'caixa' ? "text-orange-500" : "text-zinc-400")} strokeWidth={2} />
+            <span className="text-[13px] font-bold uppercase tracking-widest">Fila do Caixa</span>
+            <span className={cn(
+              "flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full font-mono text-[10px] font-black tabular-nums tracking-tighter transition-colors",
+              activeFilter === 'caixa' ? "bg-orange-200/50 text-orange-700" : "bg-zinc-200/50 text-zinc-400"
+            )}>
               {pedidosCaixa.length}
             </span>
-          </TabsTrigger>
-        </TabsList>
+          </button>
+        </div>
+      </div>
 
-        <TabsContent value="meus" className="space-y-16 m-0 outline-none animate-in fade-in-50 duration-500">
-          {/* Seção de Pedidos em Aberto */}
-          <section className="space-y-8">
-            <div className="flex items-center gap-3">
-              <div className="w-1.5 h-1.5 rounded-full bg-[#E24A07] shadow-[0_0_10px_#E24A07]" />
-              <h2 className="font-sans text-sm font-semibold text-zinc-400 uppercase tracking-[0.15em]">
-                Em Aberto
-              </h2>
-            </div>
-            
-            {loadingPedidos ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {[1, 2, 3].map(i => (
-                  <div key={i} className="h-56 bg-white border border-zinc-200/50 rounded-2xl animate-pulse shadow-[0_1px_2px_rgba(0,0,0,0.05),0_8px_16px_-4px_rgba(0,0,0,0.02)]" />
-                ))}
-              </div>
-            ) : pedidosAbertos.length === 0 ? (
-              <div className="flex flex-col items-center justify-center bg-white border border-dashed border-zinc-200 rounded-3xl p-24 text-center space-y-6 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
-                <div className="bg-zinc-50 p-8 rounded-full border border-zinc-100">
-                  <ShoppingBag className="w-12 h-12 text-zinc-200" strokeWidth={1} />
+      <div className="relative">
+        <AnimatePresence mode="wait">
+          {activeFilter === 'meus' ? (
+            <motion.section 
+              key="meus"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="space-y-6"
+            >
+              {loadingPedidos ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="h-48 bg-white border border-zinc-200/50 rounded-3xl animate-pulse shadow-sm" />
+                  ))}
                 </div>
-                <div className="space-y-2">
-                  <p className="text-[13px] font-medium text-zinc-400 uppercase tracking-widest">Sem Movimentação</p>
-                  <p className="font-sans text-2xl font-medium text-zinc-600 tracking-tight">Nenhum pedido em aberto agora.</p>
+              ) : pedidosAbertos.length === 0 ? (
+                <div className="flex flex-col items-center justify-center bg-white border border-dashed border-zinc-200 rounded-3xl p-16 text-center space-y-4">
+                  <div className="bg-zinc-50 p-6 rounded-full border border-zinc-100">
+                    <ShoppingBag className="w-10 h-10 text-zinc-200" strokeWidth={1} />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest">Mesa Limpa</p>
+                    <p className="font-sans text-xl font-semibold text-zinc-600 tracking-tight">Zero pedidos na fila.</p>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {pedidosAbertos.map(pedido => (
-                  <div 
-                    key={pedido.id}
-                    onClick={() => handleEdit(pedido)}
-                    className="group bg-white ring-1 ring-zinc-950/[0.04] rounded-[24px] p-8 lg:p-10 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_8px_16px_-4px_rgba(0,0,0,0.02)] transition-all duration-300 ease-in-out hover:shadow-[0_2px_4px_rgba(0,0,0,0.06),0_12px_24px_-6px_rgba(0,0,0,0.04)] hover:-translate-y-1 hover:ring-zinc-950/[0.08] cursor-pointer active:scale-[0.98] flex flex-col justify-between min-h-[260px]"
-                  >
-                    <div className="space-y-6">
-                      <div className="flex justify-between items-start">
-                        <div className="px-3 py-1 rounded-lg bg-zinc-50 border border-zinc-100">
-                          <span className="font-mono text-xs font-bold text-zinc-500 tracking-tighter tabular-nums uppercase">{pedido.codigo}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-zinc-400">
-                          <Clock className="w-3.5 h-3.5" strokeWidth={1.5} />
-                          <span className="text-[11px] font-bold uppercase tracking-tighter">{formatTime(pedido.criadoEm)}</span>
+              ) : (
+                <div 
+                  className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 pb-12"
+                  style={{ maskImage: pedidosAbertos.length > 3 ? 'linear-gradient(to bottom, black 80%, transparent)' : 'none' }}
+                >
+                  {pedidosAbertos.map(pedido => (
+                    <div 
+                      key={pedido.id}
+                      onClick={() => handleEdit(pedido)}
+                      className="group bg-white ring-1 ring-zinc-950/[0.04] rounded-[28px] p-6 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_8px_16px_-4px_rgba(0,0,0,0.02)] transition-all duration-300 hover:shadow-[0_2px_4px_rgba(0,0,0,0.06),0_12px_24px_-6px_rgba(0,0,0,0.04)] hover:scale-[1.01] cursor-pointer flex flex-col justify-between overflow-hidden gap-6"
+                    >
+                      {/* Top Info - High Density */}
+                      <div className="flex justify-between items-center bg-zinc-50/50 p-3 -m-3 mb-1 rounded-2xl">
+                        <span className="font-mono text-base font-black text-zinc-800 tracking-tight tabular-nums uppercase">
+                          {pedido.codigo}
+                        </span>
+                        <div className="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-full shadow-sm ring-1 ring-zinc-100">
+                          <Clock className={cn("w-3.5 h-3.5", getTimerColor(pedido.criadoEm))} strokeWidth={2.5} />
+                          <span className={cn("text-sm font-bold tracking-tight capitalize", getTimerColor(pedido.criadoEm))}>
+                            {formatTime(pedido.criadoEm)}
+                          </span>
                         </div>
                       </div>
 
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-4">
-                          <div className="bg-zinc-50 p-2.5 rounded-xl border border-zinc-100 group-hover:bg-orange-50 group-hover:border-orange-100 transition-colors">
-                            <MapPin className="w-5 h-5 text-zinc-400 group-hover:text-[#E24A07] transition-colors" strokeWidth={1.5} />
+                      {/* Content - Compact */}
+                      <div className="flex items-center justify-between px-1">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 flex items-center justify-center bg-zinc-50 rounded-xl border border-zinc-100 group-hover:bg-orange-50 group-hover:border-orange-100 transition-colors">
+                            <MapPin className="w-4 h-4 text-zinc-400 group-hover:text-[#E24A07]" strokeWidth={2} />
                           </div>
-                          <span className="font-sans text-xl font-medium text-zinc-900 tracking-tight">
+                          <span className="font-sans text-xl font-bold text-zinc-900 tracking-tight">
                             {pedido.mesa?.numero ? `Mesa ${pedido.mesa.numero}` : 'Balcão'}
                           </span>
                         </div>
                         
-                        <div className="flex items-center gap-4">
-                          <div className="bg-zinc-50 p-2.5 rounded-xl border border-zinc-100">
-                            <Package className="w-5 h-5 text-zinc-400" strokeWidth={1.5} />
-                          </div>
-                          <span className="text-[14px] font-medium text-zinc-500">
-                            {pedido.itens.length} {pedido.itens.length === 1 ? 'item registrado' : 'itens registrados'}
+                        <div className="text-right">
+                          <span className="text-xs font-semibold text-zinc-400 block mb-0.5 uppercase tracking-widest">Resumo</span>
+                          <span className="text-sm font-bold text-zinc-600">
+                            {pedido.itens.length} {pedido.itens.length === 1 ? 'item' : 'itens'}
                           </span>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="mt-8 flex items-center justify-between border-t border-zinc-100/50 pt-6">
-                      <span className="font-mono text-3xl font-bold text-zinc-900 tracking-tighter tabular-nums">
-                        {formatMoney(pedido.totalBruto)}
-                      </span>
-                      <button 
-                        onClick={(e) => handleConfirmOrder(pedido.id, e)}
-                        disabled={confirmingId === pedido.id}
-                        className="h-12 px-8 rounded-full bg-zinc-900 text-white font-bold text-[11px] uppercase tracking-widest transition-all duration-300 hover:bg-[#B91C1C] hover:shadow-[0_4px_12px_rgba(185,28,28,0.3)] active:scale-[0.96] disabled:opacity-50 hitbox-48 relative"
-                      >
-                        {confirmingId === pedido.id ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'FECHAR'}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
-
-          {/* Seção Aguardando Cobrança Premium */}
-          {pedidosAguardando.length > 0 && (
-            <section className="space-y-8">
-              <div className="flex items-center gap-3">
-                <div className="w-1.5 h-1.5 rounded-full bg-zinc-300" />
-                <h2 className="font-sans text-sm font-semibold text-zinc-400 uppercase tracking-[0.15em]">
-                  No Caixa
-                </h2>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {pedidosAguardando.map(pedido => (
-                  <div key={pedido.id} className="bg-white/40 border border-zinc-200/30 rounded-2xl p-8 opacity-50 grayscale transition-all duration-500 hover:grayscale-0 hover:opacity-100 hover:bg-white hover:border-zinc-200">
-                    <div className="flex justify-between items-start mb-6">
-                      <span className="font-mono text-xs font-bold text-zinc-400 tracking-tighter tabular-nums uppercase">{pedido.codigo}</span>
-                      <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-tighter">{formatTime(pedido.criadoEm)}</span>
-                    </div>
-                    <div className="flex items-center gap-4 text-zinc-400">
-                      <div className="bg-zinc-50 p-2.5 rounded-xl border border-zinc-100">
-                        <Banknote className="w-5 h-5" strokeWidth={1.5} />
+                      {/* Footer Actions */}
+                      <div className="flex items-center justify-between pt-4 border-t border-zinc-100/60 mt-2">
+                        <span className="font-mono text-[22px] font-black text-zinc-900 tracking-tighter tabular-nums bg-zinc-50/80 px-3 py-1 rounded-xl">
+                          {formatMoney(pedido.totalBruto)}
+                        </span>
+                        <button 
+                          onClick={(e) => handleConfirmOrder(pedido.id, e)}
+                          disabled={confirmingId === pedido.id}
+                          className="h-12 px-8 rounded-2xl bg-zinc-900 text-white font-black text-[11px] uppercase tracking-widest transition-all duration-300 hover:bg-[#B91C1C] hover:shadow-[0_4px_12px_rgba(185,28,28,0.3)] hover:-translate-y-0.5 active:scale-[0.96] disabled:opacity-50 min-w-[120px] hitbox-48"
+                        >
+                          {confirmingId === pedido.id ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'FECHAR'}
+                        </button>
                       </div>
-                      <span className="text-xs font-bold uppercase tracking-widest">Processando Pagamento</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </motion.section>
+          ) : (
+            <motion.section 
+              key="caixa"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+            >
+              <div 
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-12"
+                style={{ maskImage: pedidosCaixa.length > 3 ? 'linear-gradient(to bottom, black 80%, transparent)' : 'none' }}
+              >
+                {loadingCaixa ? (
+                  [1, 2, 3].map(i => (
+                    <div key={i} className="h-48 bg-white border border-zinc-200/50 rounded-3xl animate-pulse shadow-sm" />
+                  ))
+                ) : pedidosCaixa.length === 0 ? (
+                  <div className="col-span-full flex flex-col items-center justify-center bg-white border border-dashed border-zinc-200 rounded-3xl p-16 text-center space-y-4">
+                    <div className="bg-zinc-50 p-6 rounded-full border border-zinc-100">
+                      <Banknote className="w-10 h-10 text-zinc-200" strokeWidth={1} />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest">Caixa Limpo</p>
+                      <p className="font-sans text-xl font-semibold text-zinc-600 tracking-tight">Nenhum pedido aguardando pagamento.</p>
                     </div>
                   </div>
-                ))}
+                ) : (
+                  pedidosCaixa.map(pedido => (
+                    <div key={pedido.id} className="bg-white ring-1 ring-zinc-950/[0.04] rounded-[28px] p-6 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_8px_16px_-4px_rgba(0,0,0,0.02)] border-l-[6px] border-l-orange-500 flex flex-col justify-between gap-6 opacity-80 mix-blend-luminosity hover:mix-blend-normal hover:opacity-100 transition-all duration-300">
+                      {/* Top Info */}
+                      <div className="flex justify-between items-center bg-zinc-50/50 p-2 -m-2 mb-1 rounded-xl">
+                        <span className="font-mono text-sm font-black text-zinc-700 tracking-tight tabular-nums uppercase">
+                          {pedido.codigo}
+                        </span>
+                        <span className="text-[11px] font-bold text-zinc-400 capitalize tracking-tight bg-white px-2 py-0.5 rounded-full shadow-sm ring-1 ring-zinc-100">
+                          {formatTime(pedido.criadoEm)}
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center gap-4 px-1">
+                        <div className="w-10 h-10 flex items-center justify-center bg-zinc-50 rounded-xl border border-zinc-100">
+                          <UserCircle className="w-5 h-5 text-zinc-400" strokeWidth={1.5} />
+                        </div>
+                        <div className="space-y-0.5">
+                          <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Atendente</p>
+                          <p className="text-[15px] font-bold text-zinc-700 tracking-tight truncate max-w-[150px]">{pedido.atendente.nome}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-4 border-t border-zinc-100/60 mt-2">
+                        <span className="font-mono text-[22px] font-black text-zinc-900 tracking-tighter tabular-nums bg-zinc-50 px-3 py-1 rounded-xl">
+                          {formatMoney(pedido.totalFinal)}
+                        </span>
+                        <button 
+                          onClick={() => setPagarPedido(pedido)}
+                          className="bg-emerald-50 text-emerald-700 px-5 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest border border-emerald-200/60 shadow-[0_1px_2px_rgba(16,185,129,0.1)] flex items-center gap-2 transition-all hover:bg-emerald-600 hover:text-white hover:border-emerald-600 hover:shadow-[0_4px_12px_rgba(16,185,129,0.3)] active:scale-95 hitbox-48"
+                        >
+                          <Banknote className="w-4 h-4" strokeWidth={2.5} /> RECEBER
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
-            </section>
+            </motion.section>
           )}
-        </TabsContent>
+        </AnimatePresence>
+      </div>
 
-        <TabsContent value="caixa" className="m-0 outline-none animate-in fade-in-50 duration-500">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {loadingCaixa ? (
-              [1, 2, 3].map(i => (
-                <div key={i} className="h-56 bg-white border border-zinc-200/50 rounded-2xl animate-pulse shadow-[0_1px_2px_rgba(0,0,0,0.05),0_8px_16px_-4px_rgba(0,0,0,0.02)]" />
-              ))
-            ) : pedidosCaixa.length === 0 ? (
-              <div className="col-span-full flex flex-col items-center justify-center bg-white border border-dashed border-zinc-200 rounded-3xl p-24 text-center space-y-6 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
-                <div className="bg-zinc-50 p-8 rounded-full border border-zinc-100">
-                  <Banknote className="w-12 h-12 text-zinc-200" strokeWidth={1} />
-                </div>
-                <div className="space-y-2">
-                  <p className="text-[13px] font-medium text-zinc-400 uppercase tracking-widest">Fila do Caixa</p>
-                  <p className="font-sans text-2xl font-medium text-zinc-600 tracking-tight">Nenhum pedido aguardando pagamento.</p>
-                </div>
-              </div>
-            ) : (
-              pedidosCaixa.map(pedido => (
-                <div key={pedido.id} className="group bg-white ring-1 ring-zinc-950/[0.04] rounded-[24px] p-8 lg:p-10 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_8px_16px_-4px_rgba(0,0,0,0.02)] border-l-[6px] border-l-orange-500 transition-all duration-300 hover:shadow-[0_2px_4px_rgba(0,0,0,0.06),0_12px_24px_-6px_rgba(0,0,0,0.04)] hover:-translate-y-1">
-                  <div className="flex justify-between items-start mb-8">
-                    <span className="font-mono text-xs font-bold text-zinc-900 tracking-tighter tabular-nums uppercase">{pedido.codigo}</span>
-                    <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-tighter">{formatTime(pedido.criadoEm)}</span>
-                  </div>
-                  
-                  <div className="space-y-8">
-                    <div className="flex items-center gap-4">
-                      <div className="bg-zinc-100 p-3 rounded-2xl border border-zinc-200/50">
-                        <UserCircle className="w-6 h-6 text-zinc-400" strokeWidth={1.2} />
-                      </div>
-                      <div className="space-y-0.5">
-                        <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Atendente</p>
-                        <p className="text-sm font-semibold text-zinc-700 tracking-tight">{pedido.atendente.nome}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between border-t border-zinc-100/50 pt-6">
-                      <span className="font-mono text-3xl font-bold text-zinc-900 tracking-tighter tabular-nums">
-                        {formatMoney(pedido.totalFinal)}
-                      </span>
-                      <div className="bg-red-50 text-[#B91C1C] px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.15em] border border-red-100/50 shadow-sm">
-                        No Caixa
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </TabsContent>
-      </Tabs>
+      {/* FAB - Botão Pílula Sticky Bottom Premium */}
+      <div className={cn(
+        "fixed bottom-0 left-0 right-0 z-[40] flex justify-center pb-[calc(max(2rem,env(safe-area-inset-bottom)))] px-4 pointer-events-none transition-all duration-300",
+        modalOpen ? "opacity-0 translate-y-4" : "opacity-100 translate-y-0"
+      )}>
+        <div className="absolute inset-0 bg-gradient-to-t from-[#FAFAFA] via-[#FAFAFA]/80 to-transparent pointer-events-none h-40 bottom-0 top-auto z-[-1] backdrop-blur-[2px]" />
+        
+        <button 
+          onClick={() => { setEditingPedido(null); setModalOpen(true); }}
+          className="pointer-events-auto group relative flex items-center justify-center gap-2.5 h-16 w-full max-w-[340px] rounded-full bg-gradient-to-r from-[#F29100] via-[#E24A07] to-[#B91C1C] text-white font-black text-sm uppercase tracking-widest shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_8px_32px_rgba(226,74,7,0.35),0_2px_8px_rgba(0,0,0,0.1)] transition-all duration-300 hover:scale-[1.03] active:scale-[0.96] ring-1 ring-zinc-950/[0.04]"
+        >
+          <Plus className="w-5 h-5 transition-transform duration-500 group-hover:rotate-180" strokeWidth={3} />
+          NOVO PEDIDO
+        </button>
+      </div>
 
       <PedidoModalMobile 
         open={modalOpen} 
         onOpenChange={setModalOpen}
         pedidoEdicao={editingPedido}
       />
+      <ModalPagamento 
+        pedido={pagarPedido} 
+        onClose={() => setPagarPedido(null)} 
+      />
     </div>
   )
 }
+

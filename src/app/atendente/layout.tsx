@@ -17,7 +17,7 @@ export default async function AtendenteLayout({ children }: { children: React.Re
   }
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] flex flex-col font-sans">
+    <div className="min-h-screen bg-[#FAFAFA] flex flex-col font-sans overflow-x-hidden">
       {/* Header Responsivo (Substitui a Sidebar) */}
       <header className="sticky top-0 z-40 w-full min-h-[64px] bg-white/70 backdrop-blur-md border-b border-zinc-950/[0.06] shadow-sm">
         <div className="mx-auto max-w-[1600px] px-6 md:px-12 h-16 flex items-center justify-between">
