@@ -187,11 +187,11 @@ export function ModalPagamento({ pedido: stalePedido, onClose }: ModalPagamentoP
                   {item.quantidade}
                 </span>
                 <button 
-                  onClick={() => handleUpdateItem(item.id, 'ADICIONAR')}
-                  disabled={isProcessingItem === item.id || isSubmitting}
+                  onClick={() => handleUpdateItem(item.produtoId, 'ADICIONAR')}
+                  disabled={isProcessingItem === item.produtoId || isSubmitting}
                   className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-orange-50 text-zinc-400 hover:text-orange-500 transition-colors disabled:opacity-50 active:scale-90"
                 >
-                  {isProcessingItem === item.id ? <Loader2 className="w-4 h-4 animate-spin text-orange-500" /> : <Plus className="w-4 h-4" />}
+                  {isProcessingItem === item.produtoId ? <Loader2 className="w-4 h-4 animate-spin text-orange-500" /> : <Plus className="w-4 h-4" />}
                 </button>
               </div>
             </div>

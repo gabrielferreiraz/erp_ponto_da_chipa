@@ -21,6 +21,62 @@ export class CaixaService {
     return this.repository.fetchFila()
   }
 
+  async adicionarItem(pedidoId: string, produtoId: string, quantidade: number) {
+    return await prisma.$transaction(async (tx: any) => {
+      const pedido = await tx.pedido.findUnique({
+        where: { id: pedidoId },
+        include: { itens: true }
+      })
+
+      if (!pedido) throw new Error('NOT_FOUND: Pedido não encontrado')
+      if (pedido.orderStatus !== 'AGUARDANDO_COBRANCA') {
+        throw new Error('CONFLICT: O pedido não está aguardando cobrança')
+      }
+
+      const produto = await tx.produto.findUnique({ where: { id: produtoId } })
+      if (!produto) throw new Error('NOT_FOUND: Produto não encontrado')
+      if (!produto.disponivel) throw new Error('BAD_REQUEST: Produto indisponível')
+      if (produto.qtdVisor < quantidade) {
+        throw new Error(`BAD_REQUEST: Estoque insuficiente no visor (${produto.qtdVisor})`)
+      }
+
+      // Verifica se já existe o item ativo no pedido para apenas somar
+      const itemExistente = pedido.itens.find((i: any) => i.produtoId === produtoId && i.status === 'ATIVO')
+
+      if (itemExistente) {
+        await tx.itemPedido.update({
+          where: { id: itemExistente.id },
+          data: { quantidade: itemExistente.quantidade + quantidade }
+        })
+      } else {
+        await tx.itemPedido.create({
+          data: {
+            pedidoId,
+            produtoId,
+            quantidade,
+            nomeSnapshot: produto.nome,
+            precoSnapshot: produto.preco,
+            status: 'ATIVO'
+          }
+        })
+      }
+
+      // Recalcula total
+      const todosItens = await tx.itemPedido.findMany({
+        where: { pedidoId, status: 'ATIVO' }
+      })
+      const novoTotal = todosItens.reduce((acc: number, curr: any) => acc + (Number(curr.precoSnapshot) * curr.quantidade), 0)
+
+      await tx.pedido.update({
+        where: { id: pedidoId },
+        data: { totalBruto: new Prisma.Decimal(novoTotal), totalFinal: new Prisma.Decimal(novoTotal) }
+      })
+
+      sseEmitter.emit('pedido_pago')
+      return { success: true }
+    })
+  }
+
   async cancelarItem(itemId: string, usuarioId: string, motivo: string, quantidadeCancelada?: number) {
     // Usa transação pois pode desmembrar um item parcialmente
     return await prisma.$transaction(async (tx: any) => {
@@ -86,7 +142,8 @@ export class CaixaService {
       await tx.pedido.update({
         where: { id: item.pedidoId },
         data: {
-          totalBruto: new Prisma.Decimal(totalBrutoNovo)
+          totalBruto: new Prisma.Decimal(totalBrutoNovo),
+          totalFinal: new Prisma.Decimal(totalBrutoNovo)
         }
       })
 

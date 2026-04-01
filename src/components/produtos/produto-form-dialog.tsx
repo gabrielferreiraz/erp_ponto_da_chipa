@@ -40,9 +40,10 @@ export function ProdutoFormDialog({ open, onOpenChange, produto }: Props) {
   const isEditing = !!produto
   
   const { register, handleSubmit, control, formState: { errors, isSubmitting }, reset, setValue } = useForm<FormData>({
-    resolver: zodResolver(createProdutoSchema) as any,
+    resolver: zodResolver(createProdutoSchema),
     defaultValues: {
       nome: '',
+      categoriaId: '',
       preco: 0,
       qtdEstoque: 0,
       qtdVisor: 0,
@@ -52,34 +53,72 @@ export function ProdutoFormDialog({ open, onOpenChange, produto }: Props) {
     }
   })
 
+  // Helper para formatar moeda BRL (centavos primeiro)
+  const formatCurrency = (value: number | string) => {
+    const amount = typeof value === 'string' ? value.replace(/\D/g, '') : Math.round(Number(value) * 100).toString()
+    if (!amount) return 'R$ 0,00'
+    const numericValue = parseInt(amount, 10) / 100
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(numericValue)
+  }
+
+  // Helper para converter BRL formatado de volta para número
+  const parseCurrency = (value: string) => {
+    const amount = value.replace(/\D/g, '')
+    return parseInt(amount, 10) / 100 || 0
+  }
+
   // Sincroniza estado de edição quando o modal abrir
   useEffect(() => {
     if (open) {
+      console.log('[DEBUG] Modal aberto. Produto para edição:', produto)
       if (produto) {
         setValue('nome', produto.nome)
-        // Set explicitly to support object reference 
         setValue('categoriaId', produto.categoriaId)
-        setValue('preco', produto.preco)
-        setValue('qtdEstoque', produto.qtdEstoque)
-        setValue('qtdVisor', produto.qtdVisor)
-        setValue('estoqueMinimo', produto.estoqueMinimo)
-        setValue('disponivel', produto.disponivel)
+        setValue('preco', Number(produto.preco))
+        setValue('qtdEstoque', Number(produto.qtdEstoque))
+        setValue('qtdVisor', Number(produto.qtdVisor))
+        setValue('estoqueMinimo', Number(produto.estoqueMinimo))
+        setValue('disponivel', Boolean(produto.disponivel))
         setValue('imagemUrl', produto.imagemUrl || '')
       } else {
-        reset()
+        reset({
+          nome: '',
+          categoriaId: '',
+          preco: 0,
+          qtdEstoque: 0,
+          qtdVisor: 0,
+          estoqueMinimo: 5,
+          disponivel: true,
+          imagemUrl: ''
+        })
       }
     }
   }, [open, produto, setValue, reset])
 
   const onSubmit = async (data: FormData) => {
+    console.log('[DEBUG] Dados validados pelo Zod:', data)
     try {
+      const payload = {
+        ...data,
+        preco: Number(data.preco),
+        qtdEstoque: Number(data.qtdEstoque),
+        qtdVisor: Number(data.qtdVisor),
+        estoqueMinimo: Number(data.estoqueMinimo),
+        imagemUrl: data.imagemUrl === '' ? null : data.imagemUrl
+      }
+      
+      console.log('[DEBUG] Enviando payload para API:', payload)
+
       const url = isEditing ? `/api/produtos/${produto.id}` : '/api/produtos'
       const method = isEditing ? 'PUT' : 'POST'
       
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        body: JSON.stringify(payload)
       })
 
       if (!res.ok) {
@@ -95,6 +134,14 @@ export function ProdutoFormDialog({ open, onOpenChange, produto }: Props) {
     }
   }
 
+  const onError = (errors: any) => {
+    console.error('[DEBUG] Erros de Validação do Formulário:', errors)
+    // Log exactly which fields are failing and what the values are in the form state
+    const formValues = control._formValues
+    console.log('[DEBUG] Valores atuais no estado do formulário:', formValues)
+    toast.error('Verifique os campos obrigatórios')
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-xl">
@@ -107,11 +154,21 @@ export function ProdutoFormDialog({ open, onOpenChange, produto }: Props) {
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-2">
+        <form onSubmit={handleSubmit(onSubmit, onError)} className="space-y-4 mt-2">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="nome">Nome do Produto <span className="text-red-500">*</span></Label>
-              <Input id="nome" {...register('nome')} placeholder="Ex: Chipa Tradicional" />
+              <Controller
+                control={control}
+                name="nome"
+                render={({ field }) => (
+                  <Input 
+                    id="nome" 
+                    {...field} 
+                    placeholder="Ex: Chipa Tradicional" 
+                  />
+                )}
+              />
               {errors.nome && <p className="text-xs text-red-500">{errors.nome.message}</p>}
             </div>
 
@@ -145,23 +202,52 @@ export function ProdutoFormDialog({ open, onOpenChange, produto }: Props) {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="space-y-2">
               <Label htmlFor="preco">Preço (R$) <span className="text-red-500">*</span></Label>
-              <Input id="preco" type="number" step="0.01" {...register('preco', { valueAsNumber: true })} />
+              <Controller
+                control={control}
+                name="preco"
+                render={({ field }) => (
+                  <Input 
+                    id="preco" 
+                    placeholder="R$ 0,00"
+                    value={formatCurrency(field.value)}
+                    onChange={(e) => {
+                      const numeric = parseCurrency(e.target.value)
+                      field.onChange(numeric)
+                    }}
+                  />
+                )}
+              />
               {errors.preco && <p className="text-xs text-red-500">{errors.preco.message}</p>}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="qtdEstoque">Loja</Label>
-              <Input id="qtdEstoque" type="number" {...register('qtdEstoque', { valueAsNumber: true })} />
+              <Input 
+                id="qtdEstoque" 
+                type="number" 
+                {...register('qtdEstoque', { valueAsNumber: true })} 
+              />
+              {errors.qtdEstoque && <p className="text-xs text-red-500">{errors.qtdEstoque.message}</p>}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="qtdVisor">Visor</Label>
-              <Input id="qtdVisor" type="number" {...register('qtdVisor', { valueAsNumber: true })} />
+              <Input 
+                id="qtdVisor" 
+                type="number" 
+                {...register('qtdVisor', { valueAsNumber: true })} 
+              />
+              {errors.qtdVisor && <p className="text-xs text-red-500">{errors.qtdVisor.message}</p>}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="estoqueMinimo">Min.</Label>
-              <Input id="estoqueMinimo" type="number" {...register('estoqueMinimo', { valueAsNumber: true })} />
+              <Input 
+                id="estoqueMinimo" 
+                type="number" 
+                {...register('estoqueMinimo', { valueAsNumber: true })} 
+              />
+              {errors.estoqueMinimo && <p className="text-xs text-red-500">{errors.estoqueMinimo.message}</p>}
             </div>
           </div>
 

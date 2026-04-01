@@ -31,28 +31,39 @@ export function withSecurity(
   options: SecurityOptions = {}
 ) {
   return async (req: Request, context: NextContext) => {
-    const ip = getClientIP(req)
-    const route = new URL(req.url).pathname
+    let ip = '127.0.0.1'
+    let route = '/'
+    
+    try {
+      ip = getClientIP(req)
+      route = new URL(req.url).pathname
+    } catch (e) {
+      console.error('Security Context Error:', e)
+    }
 
     // 1. Rate Limit
     if (options.rateLimit) {
-      const isLimited = await rateLimiter.isLimited(
-        `${ip}:${route}`,
-        options.rateLimit.limit,
-        options.rateLimit.windowMs
-      )
-
-      if (isLimited) {
-        SecurityLogger.log({
-          event: 'RATE_LIMIT',
-          route,
-          ip,
-          details: 'Muitas requisições em pouco tempo'
-        })
-        return NextResponse.json(
-          { error: 'Muitas requisições. Tente novamente mais tarde.' },
-          { status: 429 }
+      try {
+        const isLimited = await rateLimiter.isLimited(
+          `${ip}:${route}`,
+          options.rateLimit.limit,
+          options.rateLimit.windowMs
         )
+
+        if (isLimited) {
+          SecurityLogger.log({
+            event: 'RATE_LIMIT',
+            route,
+            ip,
+            details: 'Muitas requisições em pouco tempo'
+          })
+          return NextResponse.json(
+            { error: 'Muitas requisições. Tente novamente mais tarde.' },
+            { status: 429 }
+          )
+        }
+      } catch (e) {
+        console.error('Rate Limit Execution Error:', e)
       }
     }
 

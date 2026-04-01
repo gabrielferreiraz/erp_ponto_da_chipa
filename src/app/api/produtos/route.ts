@@ -26,13 +26,25 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json()
-    const validData = createProdutoSchema.parse(body)
+    console.log('[DEBUG API] Recebido no POST /api/produtos:', body)
     
+    const parsed = createProdutoSchema.safeParse(body)
+    
+    if (!parsed.success) {
+      console.error('[DEBUG API] Erro de validação Zod:', parsed.error.format())
+      return NextResponse.json({ 
+        error: 'Dados inválidos', 
+        details: parsed.error.format() 
+      }, { status: 400 })
+    }
+
+    const validData = parsed.data
     const service = new ProdutoService()
     const produto = await service.create(validData)
     
     return NextResponse.json(produto, { status: 201 })
   } catch (error: any) {
+    console.error('[DEBUG API] Erro fatal no POST:', error)
     return NextResponse.json({ error: error.message || 'Erro ao processar' }, { status: 400 })
   }
 }

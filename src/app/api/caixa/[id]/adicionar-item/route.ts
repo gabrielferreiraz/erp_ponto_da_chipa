@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server'
 import { withSecurity } from '@/lib/with-security'
-import { cancelarItemSchema } from '@/lib/validations/caixa'
+import { adicionarItemSchema } from '@/lib/validations/caixa'
 import { commonParams } from '@/lib/validations/common'
 import { CaixaService } from '@/services/caixa.service'
 
 const caixaService = new CaixaService()
 
-export const PATCH = withSecurity(async (req, session, { params }) => {
+export const POST = withSecurity(async (req, session, { params }) => {
   // Hardening do ID
   const idParsed = commonParams.id.safeParse(params.id)
   if (!idParsed.success) {
@@ -14,26 +14,21 @@ export const PATCH = withSecurity(async (req, session, { params }) => {
   }
 
   const body = await req.json()
-  const parsed = cancelarItemSchema.safeParse(body)
+  const parsed = adicionarItemSchema.safeParse(body)
   
   if (!parsed.success) {
     return NextResponse.json({ error: 'Dados inválidos', details: parsed.error.flatten() }, { status: 400 })
   }
 
-  // O frontend as vezes manda como 'produtoId' no caso de REMOVER
-  const itemId = parsed.data.itemId || (body as any).produtoId
+  const { produtoId, quantidade } = parsed.data
 
-  if (!itemId) {
-    return NextResponse.json({ error: 'ID do item não informado' }, { status: 400 })
+  try {
+    await caixaService.adicionarItem(idParsed.data, produtoId, quantidade)
+    return NextResponse.json({ success: true, message: 'Item adicionado.' })
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 400 })
   }
-
-  const { motivoCancelamento, quantidadeCancelada } = parsed.data
-
-  await caixaService.cancelarItem(itemId, session.user.id, motivoCancelamento, quantidadeCancelada)
-
-  return NextResponse.json({ success: true, message: 'Item estornado.' })
 }, { 
   roles: ['ADMIN', 'CAIXA', 'ATENDENTE'],
   rateLimit: { limit: 20, windowMs: 60 * 1000 }
 })
-

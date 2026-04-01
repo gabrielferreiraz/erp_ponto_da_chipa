@@ -18,7 +18,15 @@ export const commonParams = {
 
 // Helper para extrair IP da requisição
 export function getClientIP(req: Request): string {
-  const forwarded = req.headers.get('x-forwarded-for')
-  if (forwarded) return forwarded.split(',')[0].trim()
+  try {
+    // Se não for um objeto Request válido (pode acontecer em chamadas internas do Next.js)
+    if (!req || typeof req.headers?.get !== 'function') {
+      return '127.0.0.1'
+    }
+    const forwarded = req.headers.get('x-forwarded-for')
+    if (forwarded) return forwarded.split(',')[0].trim()
+  } catch (e) {
+    console.error('Error getting client IP:', e)
+  }
   return '127.0.0.1'
 }

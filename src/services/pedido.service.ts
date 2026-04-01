@@ -111,8 +111,10 @@ export class PedidoService {
     const pedidoAtual = await this.repository.findById(data.id)
     if (!pedidoAtual) throw new Error('NOT_FOUND: Pedido não encontrado.')
     
-    // Regra: Atendente só edita o próprio pedido
-    if (pedidoAtual.atendenteId !== data.atendenteId) {
+    // Regra: Atendente só edita o próprio pedido (ADMIN pode editar qualquer um)
+    const isAdmin = await prisma.usuario.findUnique({ where: { id: data.atendenteId } }).then(u => u?.role === 'ADMIN')
+    
+    if (pedidoAtual.atendenteId !== data.atendenteId && !isAdmin) {
        throw new Error('FORBIDDEN: Você não tem permissão para editar este pedido.')
     }
 

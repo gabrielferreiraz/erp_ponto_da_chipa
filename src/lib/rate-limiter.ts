@@ -22,19 +22,24 @@ export const rateLimiter = {
    * @param windowMs Janela de tempo em milissegundos
    */
   async isLimited(key: string, limit: number, windowMs: number): Promise<boolean> {
-    const now = Date.now()
-    const entry = globalRateLimit.rateLimits!.get(key)
+    try {
+      const now = Date.now()
+      const entry = globalRateLimit.rateLimits!.get(key)
 
-    if (!entry || now > entry.resetTime) {
-      globalRateLimit.rateLimits!.set(key, {
-        count: 1,
-        resetTime: now + windowMs
-      })
-      return false
+      if (!entry || now > entry.resetTime) {
+        globalRateLimit.rateLimits!.set(key, {
+          count: 1,
+          resetTime: now + windowMs
+        })
+        return false
+      }
+
+      entry.count++
+      return entry.count > limit
+    } catch (e) {
+      console.error('RateLimiter Error:', e)
+      return false // Fail-safe: não bloquear em caso de erro interno
     }
-
-    entry.count++
-    return entry.count > limit
   }
 }
 

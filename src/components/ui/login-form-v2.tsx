@@ -10,18 +10,26 @@ import { motion, AnimatePresence } from 'framer-motion';
  */
 export function LightBackground() {
   return (
-    <div className="absolute inset-0 w-full h-full overflow-hidden bg-white">
-      {/* Soft Gradient Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-white via-red-50/20 to-zinc-50" />
+    <div className="absolute inset-0 w-full h-full overflow-hidden bg-zinc-950">
+      {/* Animated Deep Gradient Background */}
+      <div className="absolute inset-0 opacity-60">
+        <div className="absolute inset-0 bg-gradient-to-br from-red-900/50 via-zinc-900/70 to-blue-900/50 animate-[pulse_8s_infinite] transition-all duration-[4s]" />
+      </div>
       
-      {/* Subtle Pattern Overlay */}
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
-           style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` }} 
+      {/* Subtle Pattern Overlay (Plus Signs) */}
+      <div className="absolute inset-0 opacity-[0.08] pointer-events-none mix-blend-overlay" 
+           style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` }} 
       />
 
-      {/* Radial Glows */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-red-100/30 blur-[120px] rounded-full" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-zinc-100 blur-[120px] rounded-full" />
+      {/* Deep Radial Glows for subtle color shifting */}
+      <div className="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] bg-red-800/30 blur-[160px] rounded-full animate-[pulse_10s_infinite]" />
+      <div className="absolute bottom-[-20%] right-[-10%] w-[70%] h-[70%] bg-blue-800/30 blur-[160px] rounded-full animate-[pulse_12s_infinite] delay-1000" />
+      <div className="absolute top-[20%] right-[-20%] w-[60%] h-[60%] bg-zinc-800/20 blur-[140px] rounded-full animate-[pulse_15s_infinite] delay-2000" />
+      
+      {/* Central Highlight behind the form */}
+      <div className="absolute inset-0 flex items-center justify-center opacity-40">
+        <div className="w-[500px] h-[500px] bg-white/5 blur-[100px] rounded-full" />
+      </div>
     </div>
   );
 }
@@ -71,14 +79,11 @@ export function LoginForm() {
       transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
       className="relative w-full max-w-sm group"
     >
-      {/* Outer Glow (Premium Depth) */}
       <div className="absolute -inset-4 bg-gradient-to-br from-red-500/20 via-transparent to-zinc-500/10 blur-3xl rounded-[48px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
       
-      {/* Main Container */}
-      <div className="relative p-10 space-y-8 bg-white/90 backdrop-blur-3xl rounded-[32px] border border-white shadow-[0_32px_80px_-20px_rgba(0,0,0,0.12),0_12px_32px_-8px_rgba(0,0,0,0.05)] ring-1 ring-black/[0.03] overflow-hidden">
+      <div className="relative p-10 space-y-8 bg-white/90 backdrop-blur-3xl rounded-[32px] border border-white shadow-[0_40px_100px_-20px_rgba(0,0,0,0.25),0_16px_40px_-10px_rgba(0,0,0,0.15)] ring-1 ring-black/[0.03] overflow-hidden group-focus-within:ring-red-500/15 group-focus-within:shadow-[0_60px_120px_-30px_rgba(0,0,0,0.3)]">
         
-        {/* Shimmer Effect Border */}
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full animate-[shimmer_3s_infinite] pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none" />
 
         <div className="text-center">
           <motion.div 
@@ -98,7 +103,6 @@ export function LoginForm() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-10">
-          {/* Feedback de Erro */}
           <AnimatePresence>
             {erro && (
               <motion.div 
@@ -113,7 +117,6 @@ export function LoginForm() {
             )}
           </AnimatePresence>
 
-          {/* Email Input with Animated Label */}
           <div className="relative z-0 group/field">
             <input
               type="email"
@@ -125,7 +128,6 @@ export function LoginForm() {
               placeholder=" "
               required
             />
-            {/* Animated Underline (Premium) */}
             <div className="absolute bottom-0 left-0 w-0 h-0.5 bg-red-500 transition-all duration-500 peer-focus:w-full" />
             
             <label
@@ -137,7 +139,6 @@ export function LoginForm() {
             </label>
           </div>
 
-          {/* Password Input with Animated Label */}
           <div className="relative z-0 group/field">
             <input
               type={showSenha ? "text" : "password"}
@@ -149,7 +150,6 @@ export function LoginForm() {
               placeholder=" "
               required
             />
-            {/* Animated Underline (Premium) */}
             <div className="absolute bottom-0 left-0 w-0 h-0.5 bg-red-500 transition-all duration-500 peer-focus:w-full" />
 
             <label
