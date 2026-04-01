@@ -3,25 +3,22 @@ import { z } from 'zod'
 export const createProdutoSchema = z.object({
   nome: z
     .string({ 
-      required_error: 'Nome é obrigatório',
-      invalid_type_error: 'Nome deve ser um texto'
+      error: 'Nome é obrigatório',
+      message: 'Nome deve ser um texto'
     })
     .min(2, 'Nome deve ter pelo menos 2 caracteres')
     .max(100, 'Nome muito longo'),
-  categoriaId: z.string({ required_error: 'Categoria é obrigatória' }).min(1, 'Categoria é obrigatória'),
+  categoriaId: z.string({ error: 'Categoria é obrigatória' }).min(1, 'Categoria é obrigatória'),
   preco: z
-    .union([z.number(), z.string()])
-    .transform((val) => Number(val))
-    .pipe(
-      z.number({ 
-        required_error: 'Preço é obrigatório',
-        invalid_type_error: 'Preço deve ser um número'
-      })
-      .positive('Preço deve ser positivo')
-    ),
-  qtdEstoque: z.union([z.number(), z.string()]).transform((val) => Math.floor(Number(val)) || 0).default(0),
-  qtdVisor: z.union([z.number(), z.string()]).transform((val) => Math.floor(Number(val)) || 0).default(0),
-  estoqueMinimo: z.union([z.number(), z.string()]).transform((val) => Math.floor(Number(val)) || 5).default(5),
+    .coerce
+    .number({ 
+      error: 'Preço é obrigatório',
+      message: 'Preço deve ser um número'
+    })
+    .positive('Preço deve ser positivo'),
+  qtdEstoque: z.coerce.number().int().min(0).default(0),
+  qtdVisor: z.coerce.number().int().min(0).default(0),
+  estoqueMinimo: z.coerce.number().int().min(0).default(5),
   disponivel: z.boolean().default(true),
   imagemUrl: z.string().optional().nullable(),
 })

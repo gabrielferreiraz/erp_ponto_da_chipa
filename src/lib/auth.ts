@@ -43,7 +43,7 @@ export const authConfig: NextAuthConfig = {
           senha: true,
           role: true,
           ativo: true,
-          emailVerified: true,
+          emailVerificado: true,
           sessionVersion: true,
         },
       })

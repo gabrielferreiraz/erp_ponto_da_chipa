@@ -13,12 +13,12 @@ import {
   Popover, 
   PopoverContent, 
   PopoverTrigger 
-} from '@/components/ui/popover'
+} from '@radix-ui/react-popover'
 import { Button } from '@/components/ui/button'
 import { Calendar as CalendarIcon, ChevronDown, Check } from 'lucide-react'
 import { format, subDays, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { Calendar } from '@/components/ui/calendar'
+import { DayPicker as Calendar } from 'react-day-picker'
 import { cn } from '@/lib/utils'
 import { DateRange } from 'react-day-picker'
 
