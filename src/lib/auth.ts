@@ -40,12 +40,13 @@ export const authConfig: NextAuthConfig = {
             id: true,
             nome: true,
             email: true,
-            senha: true,
-            role: true,
-            ativo: true,
-            emailVerified: true,
-          },
-        })
+          senha: true,
+          role: true,
+          ativo: true,
+          emailVerified: true,
+          sessionVersion: true,
+        },
+      })
 
         if (!usuario) {
           SecurityLogger.log({ event: 'LOGIN_FAILURE', route, ip, details: `Usuário não encontrado: ${email}` })
@@ -55,12 +56,6 @@ export const authConfig: NextAuthConfig = {
         if (!usuario.ativo) {
           SecurityLogger.log({ event: 'LOGIN_FAILURE', route, ip, userId: usuario.id, details: 'Usuário inativo' })
           return null
-        }
-
-        // R1: Bloquear login de contas não verificadas
-        if (!usuario.emailVerified) {
-          SecurityLogger.log({ event: 'LOGIN_FAILURE', route, ip, userId: usuario.id, details: 'Email não verificado' })
-          throw new Error('Verifique seu email para acessar o sistema.')
         }
 
         const senhaValida = await bcrypt.compare(senha, usuario.senha)
@@ -82,6 +77,7 @@ export const authConfig: NextAuthConfig = {
           nome: usuario.nome,
           email: usuario.email,
           role: usuario.role,
+          sessionVersion: usuario.sessionVersion,
         }
       },
     }),
@@ -89,11 +85,12 @@ export const authConfig: NextAuthConfig = {
 
   callbacks: {
     async jwt({ token, user }) {
-      // Adiciona role, id e nome ao token JWT na primeira autenticação
+      // Adiciona role, id, nome e sessionVersion ao token JWT na primeira autenticação
       if (user) {
         token.id = user.id as string
         token.role = user.role
         token.nome = user.nome
+        token.sessionVersion = user.sessionVersion
       }
       return token
     },
@@ -103,6 +100,7 @@ export const authConfig: NextAuthConfig = {
         session.user.id = token.id as string
         session.user.role = token.role as 'ADMIN' | 'CAIXA' | 'ATENDENTE'
         session.user.nome = token.nome as string
+        session.user.sessionVersion = token.sessionVersion
       }
       return session
     },

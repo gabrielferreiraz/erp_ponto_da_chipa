@@ -6,48 +6,6 @@ export class AuthService {
   private tokenService = new TokenService()
 
   /**
-   * Processa a verificação de email via token
-   */
-  async verifyEmail(token: string, ip: string) {
-    const existingToken = await this.tokenService.verifyEmailToken(token)
-
-    if (!existingToken) {
-      SecurityLogger.log({
-        event: 'UNAUTHORIZED',
-        route: '/api/auth/verify-email',
-        ip,
-        details: 'Token de verificação inválido ou expirado'
-      })
-      throw new Error('Token inválido ou expirado')
-    }
-
-    const user = await prisma.usuario.findUnique({
-      where: { email: existingToken.email }
-    })
-
-    if (!user) {
-      throw new Error('Usuário não encontrado')
-    }
-
-    await prisma.usuario.update({
-      where: { id: user.id },
-      data: { emailVerified: new Date() }
-    })
-
-    await this.tokenService.deleteVerificationToken(existingToken.id)
-
-    SecurityLogger.log({
-      event: 'LOGIN_SUCCESS', // Usando um evento existente ou mapeando para sucesso de ação
-      route: '/api/auth/verify-email',
-      ip,
-      userId: user.id,
-      details: 'Email verificado com sucesso'
-    })
-
-    return { success: true }
-  }
-
-  /**
    * Solicita reset de senha
    */
   async requestPasswordReset(email: string, ip: string) {

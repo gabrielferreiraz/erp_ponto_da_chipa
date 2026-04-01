@@ -23,17 +23,6 @@ export class EmailService {
     })
   }
 
-  async sendVerificationEmail(email: string, token: string) {
-    const url = new URL('/api/auth/verify-email/confirm', this.getBaseUrl())
-    url.searchParams.set('token', token)
-
-    await this.dispatchEmail({
-      to: email,
-      subject: 'Verifique seu email',
-      text: `Confirme seu email acessando: ${url.toString()}`,
-    })
-  }
-
   async sendPasswordResetEmail(email: string, token: string) {
     const url = new URL('/reset-password', this.getBaseUrl())
     url.searchParams.set('token', token)

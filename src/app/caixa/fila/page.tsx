@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function FilaCaixaPage() {
-  const { fila, isLoading, error } = useFilaCaixa()
+  const { fila, isLoading, isError } = useFilaCaixa()
   
   const [pagarPedido, setPagarPedido] = useState<FilaPedidoFrontend | null>(null)
   const [cancelarItem, setCancelarItem] = useState<FilaItemFrontend | null>(null)
@@ -51,7 +51,7 @@ export default function FilaCaixaPage() {
           </div>
           
           <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-50 border border-zinc-200/50 shadow-sm ring-1 ring-black/[0.02]">
-            {error ? (
+            {isError ? (
               <>
                 <WifiOff className="w-3 h-3 text-rose-500" />
                 <span className="text-[10px] font-bold text-rose-500 uppercase tracking-widest">Desconectado</span>
