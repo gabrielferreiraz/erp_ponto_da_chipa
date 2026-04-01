@@ -116,6 +116,7 @@ async function main() {
       senha: senhaHasheada,
       role: 'ADMIN',
       ativo: true,
+      emailVerified: new Date(),
     },
   })
 
@@ -132,6 +133,7 @@ async function main() {
       senha: senhaCaixa,
       role: 'CAIXA',
       ativo: true,
+      emailVerified: new Date(),
     },
   })
 
@@ -148,6 +150,7 @@ async function main() {
       senha: senhaAtendente,
       role: 'ATENDENTE',
       ativo: true,
+      emailVerified: new Date(),
     },
   })
 

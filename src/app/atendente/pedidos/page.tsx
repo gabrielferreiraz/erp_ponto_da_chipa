@@ -239,18 +239,21 @@ export default function PedidosAtendentePage() {
                   </div>
                 ) : (
                   pedidosCaixa.map(pedido => (
-                    <div key={pedido.id} className="bg-white ring-1 ring-zinc-950/[0.04] rounded-[28px] p-6 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_8px_16px_-4px_rgba(0,0,0,0.02)] border-l-[6px] border-l-orange-500 flex flex-col justify-between gap-6 opacity-80 mix-blend-luminosity hover:mix-blend-normal hover:opacity-100 transition-all duration-300">
+                    <div key={pedido.id} className="bg-white ring-1 ring-zinc-950/[0.04] rounded-[28px] p-6 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_8px_16px_-4px_rgba(0,0,0,0.02)] border-l-[6px] border-l-orange-500 flex flex-col justify-between gap-6 transition-all duration-300">
                       {/* Top Info */}
-                      <div className="flex justify-between items-center bg-zinc-50/50 p-2 -m-2 mb-1 rounded-xl">
-                        <span className="font-mono text-sm font-black text-zinc-700 tracking-tight tabular-nums uppercase">
+                      <div className="flex justify-between items-center bg-zinc-50/50 p-3 -m-3 mb-1 rounded-2xl">
+                        <span className="font-mono text-base font-black text-zinc-800 tracking-tight tabular-nums uppercase">
                           {pedido.codigo}
                         </span>
-                        <span className="text-[11px] font-bold text-zinc-400 capitalize tracking-tight bg-white px-2 py-0.5 rounded-full shadow-sm ring-1 ring-zinc-100">
-                          {formatTime(pedido.criadoEm)}
-                        </span>
+                        <div className="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-full shadow-sm ring-1 ring-zinc-100">
+                          <Clock className={cn("w-3.5 h-3.5", getTimerColor(pedido.criadoEm))} strokeWidth={2.5} />
+                          <span className={cn("text-[11px] font-bold tracking-tight capitalize", getTimerColor(pedido.criadoEm))}>
+                            {formatTime(pedido.criadoEm)}
+                          </span>
+                        </div>
                       </div>
                       
-                      <div className="flex items-center gap-4 px-1">
+                      <div className="flex items-center gap-4 px-1 mt-2">
                         <div className="w-10 h-10 flex items-center justify-center bg-zinc-50 rounded-xl border border-zinc-100">
                           <UserCircle className="w-5 h-5 text-zinc-400" strokeWidth={1.5} />
                         </div>
@@ -260,8 +263,31 @@ export default function PedidosAtendentePage() {
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between pt-4 border-t border-zinc-100/60 mt-2">
-                        <span className="font-mono text-[22px] font-black text-zinc-900 tracking-tighter tabular-nums bg-zinc-50 px-3 py-1 rounded-xl">
+                      {/* Lista de Itens (O Extrato) */}
+                      {pedido.itens.length > 0 && (
+                        <div className="px-1 mt-1 flex flex-col gap-3 border-t border-zinc-100/80 pt-5">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 opacity-60 mb-1">Resumo do Pedido</p>
+                          {pedido.itens.map(item => (
+                            <div key={item.id} className="flex items-center justify-between text-[13px] group/item">
+                              <div className="flex items-center gap-3 min-w-0 pr-3">
+                                <span className="flex-shrink-0 bg-orange-50 text-orange-700 font-mono text-[12px] font-black px-1.5 py-0.5 rounded-lg tabular-nums tracking-tighter ring-1 ring-orange-200/50 shadow-sm">
+                                  {item.quantidade}x
+                                </span>
+                                <span className="font-semibold text-zinc-700 tracking-tight truncate">
+                                  {item.nomeSnapshot}
+                                </span>
+                              </div>
+                              <span className="flex-shrink-0 font-mono text-[13px] font-bold text-zinc-400 tabular-nums tracking-tighter">
+                                {formatMoney(Number(item.precoSnapshot) * item.quantidade)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Footer Actions */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-zinc-100/80 mt-2">
+                        <span className="font-mono text-[24px] font-black text-zinc-900 tracking-tighter tabular-nums bg-zinc-50/80 px-4 py-1.5 rounded-xl border border-zinc-100 w-fit">
                           {formatMoney(pedido.totalFinal)}
                         </span>
                         <button 

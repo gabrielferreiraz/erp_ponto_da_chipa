@@ -1,202 +1,27 @@
 "use client";
-import { useEffect, useRef, useState, useTransition } from "react";
-import { User, Lock, ArrowRight, ChefHat, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { useState, useTransition } from "react";
+import { User, Lock, ArrowRight, ChefHat, AlertCircle, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
-
-// Vertex shader source code
-const vertexSmokeySource = `
-  attribute vec4 a_position;
-  void main() {
-    gl_Position = a_position;
-  }
-`;
-
-// Fragment shader source code for the smokey background effect
-const fragmentSmokeySource = `
-precision mediump float;
-
-uniform vec2 iResolution;
-uniform float iTime;
-uniform vec2 iMouse;
-uniform vec3 u_color;
-
-void mainImage(out vec4 fragColor, in vec2 fragCoord){
-    vec2 uv = fragCoord / iResolution;
-    vec2 centeredUV = (2.0 * fragCoord - iResolution.xy) / min(iResolution.x, iResolution.y);
-
-    float time = iTime * 0.5;
-
-    // Normalize mouse input (0.0 - 1.0) and remap to -1.0 ~ 1.0
-    vec2 mouse = iMouse / iResolution;
-    vec2 rippleCenter = 2.0 * mouse - 1.0;
-
-    vec2 distortion = centeredUV;
-    // Apply distortion for a wavy, smokey effect
-    for (float i = 1.0; i < 8.0; i++) {
-        distortion.x += 0.5 / i * cos(i * 2.0 * distortion.y + time + rippleCenter.x * 3.1415);
-        distortion.y += 0.5 / i * cos(i * 2.0 * distortion.x + time + rippleCenter.y * 3.1415);
-    }
-
-    // Create a glowing wave pattern
-    float wave = abs(sin(distortion.x + distortion.y + time));
-    float glow = smoothstep(0.9, 0.2, wave);
-
-    fragColor = vec4(u_color * glow, 1.0);
-}
-
-void main() {
-    mainImage(gl_FragColor, gl_FragCoord.xy);
-}
-`;
+import { motion, AnimatePresence } from 'framer-motion';
 
 /**
- * Valid blur sizes supported by Tailwind CSS.
+ * A lightweight background pattern component using SVG and Gradients
  */
-type BlurSize = "none" | "sm" | "md" | "lg" | "xl" | "2xl" | "3xl";
-
-/**
- * Props for the SmokeyBackground component.
- */
-interface SmokeyBackgroundProps {
-  backdropBlurAmount?: string;
-  color?: string;
-  className?: string;
-}
-
-/**
- * A mapping from blur size names to Tailwind CSS classes.
- */
-const blurClassMap: Record<BlurSize, string> = {
-  none: "backdrop-blur-none",
-  sm: "backdrop-blur-sm",
-  md: "backdrop-blur-md",
-  lg: "backdrop-blur-lg",
-  xl: "backdrop-blur-xl",
-  "2xl": "backdrop-blur-2xl",
-  "3xl": "backdrop-blur-3xl",
-};
-
-/**
- * A React component that renders an interactive WebGL shader background.
- */
-export function SmokeyBackground({
-  backdropBlurAmount = "sm",
-  color = "#EF4444", // Ponto da Chipa Red 500
-  className = "",
-}: SmokeyBackgroundProps): JSX.Element {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [isHovering, setIsHovering] = useState(false);
-
-  // Helper to convert hex color to RGB (0-1 range)
-  const hexToRgb = (hex: string): [number, number, number] => {
-    const r = parseInt(hex.substring(1, 3), 16) / 255;
-    const g = parseInt(hex.substring(3, 5), 16) / 255;
-    const b = parseInt(hex.substring(5, 7), 16) / 255;
-    return [r, g, b];
-  };
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const gl = canvas.getContext("webgl");
-    if (!gl) {
-      console.error("WebGL not supported");
-      return;
-    }
-
-    const compileShader = (type: number, source: string): WebGLShader | null => {
-      const shader = gl.createShader(type);
-      if (!shader) return null;
-      gl.shaderSource(shader, source);
-      gl.compileShader(shader);
-      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-        console.error("Shader compilation error:", gl.getShaderInfoLog(shader));
-        gl.deleteShader(shader);
-        return null;
-      }
-      return shader;
-    };
-
-    const vertexShader = compileShader(gl.VERTEX_SHADER, vertexSmokeySource);
-    const fragmentShader = compileShader(gl.FRAGMENT_SHADER, fragmentSmokeySource);
-    if (!vertexShader || !fragmentShader) return;
-
-    const program = gl.createProgram();
-    if (!program) return;
-    gl.attachShader(program, vertexShader);
-    gl.attachShader(program, fragmentShader);
-    gl.linkProgram(program);
-
-    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-      console.error("Program linking error:", gl.getProgramInfoLog(program));
-      return;
-    }
-
-    gl.useProgram(program);
-
-    const positionBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
-
-    const positionLocation = gl.getAttribLocation(program, "a_position");
-    gl.enableVertexAttribArray(positionLocation);
-    gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
-
-    const iResolutionLocation = gl.getUniformLocation(program, "iResolution");
-    const iTimeLocation = gl.getUniformLocation(program, "iTime");
-    const iMouseLocation = gl.getUniformLocation(program, "iMouse");
-    const uColorLocation = gl.getUniformLocation(program, "u_color");
-
-    let startTime = Date.now();
-    const [r, g, b] = hexToRgb(color);
-    gl.uniform3f(uColorLocation, r, g, b);
-
-    const render = () => {
-      const width = canvas.clientWidth;
-      const height = canvas.clientHeight;
-      canvas.width = width;
-      canvas.height = height;
-      gl.viewport(0, 0, width, height);
-
-      const currentTime = (Date.now() - startTime) / 1000;
-
-      gl.uniform2f(iResolutionLocation, width, height);
-      gl.uniform1f(iTimeLocation, currentTime);
-      gl.uniform2f(iMouseLocation, isHovering ? mousePosition.x : width / 2, isHovering ? height - mousePosition.y : height / 2);
-
-      gl.drawArrays(gl.TRIANGLES, 0, 6);
-      requestAnimationFrame(render);
-    };
-
-    const handleMouseMove = (event: MouseEvent) => {
-      const rect = canvas.getBoundingClientRect();
-      setMousePosition({ x: event.clientX - rect.left, y: event.clientY - rect.top });
-    };
-    const handleMouseEnter = () => setIsHovering(true);
-    const handleMouseLeave = () => setIsHovering(false);
-
-    canvas.addEventListener("mousemove", handleMouseMove);
-    canvas.addEventListener("mouseenter", handleMouseEnter);
-    canvas.addEventListener("mouseleave", handleMouseLeave);
-
-    render();
-
-    return () => {
-      canvas.removeEventListener("mousemove", handleMouseMove);
-      canvas.removeEventListener("mouseenter", handleMouseEnter);
-      canvas.removeEventListener("mouseleave", handleMouseLeave);
-    };
-  }, [isHovering, mousePosition, color]);
-
-  const finalBlurClass = blurClassMap[backdropBlurAmount as BlurSize] || blurClassMap["sm"];
-
+export function LightBackground() {
   return (
-    <div className={`absolute inset-0 w-full h-full overflow-hidden ${className}`}>
-      <canvas ref={canvasRef} className="w-full h-full opacity-30" />
-      <div className={`absolute inset-0 ${finalBlurClass}`}></div>
+    <div className="absolute inset-0 w-full h-full overflow-hidden bg-white">
+      {/* Soft Gradient Background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-white via-red-50/20 to-zinc-50" />
+      
+      {/* Subtle Pattern Overlay */}
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
+           style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` }} 
+      />
+
+      {/* Radial Glows */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-red-100/30 blur-[120px] rounded-full" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-zinc-100 blur-[120px] rounded-full" />
     </div>
   );
 }
@@ -240,98 +65,151 @@ export function LoginForm() {
   }
 
   return (
-    <div className="w-full max-w-sm p-8 space-y-6 bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 shadow-2xl">
-      <div className="text-center">
-        <div className="flex items-center justify-center gap-2 mb-4">
-          <div className="bg-red-600 rounded-xl p-2 shadow-lg shadow-red-600/30">
-            <ChefHat className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-2xl font-black text-white tracking-tighter">Ponto da Chipa</h1>
-        </div>
-        <h2 className="text-xl font-bold text-white/90">Bem-vindo de volta</h2>
-        <p className="mt-2 text-sm text-zinc-50/70">Sistema de Gestão Interna</p>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-8">
-        {/* Feedback de Erro */}
-        {erro && (
-          <div className="flex items-start gap-3 bg-red-500/20 border border-red-500/30 text-red-100 rounded-xl px-4 py-3 text-xs backdrop-blur-md">
-            <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0 text-red-400" />
-            <span>{erro}</span>
-          </div>
-        )}
-
-        {/* Email Input with Animated Label */}
-        <div className="relative z-0">
-          <input
-            type="email"
-            id="floating_email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            disabled={isPending}
-            className="block py-2.5 px-0 w-full text-sm text-white bg-transparent border-0 border-b-2 border-red-500/30 appearance-none focus:outline-none focus:ring-0 focus:border-red-400 peer transition-colors"
-            placeholder=" "
-            required
-          />
-          <label
-            htmlFor="floating_email"
-            className="absolute text-sm text-zinc-50/60 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:left-0 peer-focus:text-red-400 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
-          >
-            <User className="inline-block mr-2 -mt-1" size={16} />
-            E-mail
-          </label>
-        </div>
-
-        {/* Password Input with Animated Label */}
-        <div className="relative z-0">
-          <input
-            type={showSenha ? "text" : "password"}
-            id="floating_password"
-            value={senha}
-            onChange={(e) => setSenha(e.target.value)}
-            disabled={isPending}
-            className="block py-2.5 px-0 w-full text-sm text-white bg-transparent border-0 border-b-2 border-red-500/30 appearance-none focus:outline-none focus:ring-0 focus:border-red-400 peer transition-colors pr-10"
-            placeholder=" "
-            required
-          />
-          <label
-            htmlFor="floating_password"
-            className="absolute text-sm text-zinc-50/60 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:left-0 peer-focus:text-red-400 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
-          >
-            <Lock className="inline-block mr-2 -mt-1" size={16} />
-            Senha
-          </label>
-          <button
-            type="button"
-            onClick={() => setShowSenha(!showSenha)}
-            className="absolute right-0 top-2.5 text-zinc-50/60 hover:text-red-400 transition-colors"
-            tabIndex={-1}
-          >
-            {showSenha ? <EyeOff size={18} /> : <Eye size={18} />}
-          </button>
-        </div>
+    <motion.div 
+      initial={{ opacity: 0, y: 20, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+      className="relative w-full max-w-sm group"
+    >
+      {/* Outer Glow (Premium Depth) */}
+      <div className="absolute -inset-4 bg-gradient-to-br from-red-500/20 via-transparent to-zinc-500/10 blur-3xl rounded-[48px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
+      
+      {/* Main Container */}
+      <div className="relative p-10 space-y-8 bg-white/90 backdrop-blur-3xl rounded-[32px] border border-white shadow-[0_32px_80px_-20px_rgba(0,0,0,0.12),0_12px_32px_-8px_rgba(0,0,0,0.05)] ring-1 ring-black/[0.03] overflow-hidden">
         
-        <button
-          type="submit"
-          disabled={isPending}
-          className="group w-full flex items-center justify-center py-3.5 px-4 bg-red-600 hover:bg-red-500 disabled:bg-red-900 disabled:opacity-50 rounded-xl text-white font-bold shadow-lg shadow-red-600/20 transition-all duration-300 active:scale-[0.98]"
-        >
-          {isPending ? (
-            <div className="flex items-center gap-2">
-              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              Autenticando...
+        {/* Shimmer Effect Border */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full animate-[shimmer_3s_infinite] pointer-events-none" />
+
+        <div className="text-center">
+          <motion.div 
+            initial={{ scale: 0.8 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+            className="flex items-center justify-center gap-3 mb-6"
+          >
+            <div className="bg-red-600 rounded-2xl p-3 shadow-[0_12px_24px_-8px_rgba(220,38,38,0.5),inset_0_1px_0_rgba(255,255,255,0.3)]">
+              <ChefHat className="w-8 h-8 text-white" />
             </div>
-          ) : (
-            <>
-              Entrar
-              <ArrowRight className="ml-2 h-5 w-5 transform group-hover:translate-x-1 transition-transform" />
-            </>
-          )}
-        </button>
-      </form>
-      <p className="text-center text-[10px] text-zinc-50/40 uppercase tracking-widest">
-        Acesso restrito para colaboradores
-      </p>
-    </div>
+            <h1 className="text-2xl font-black text-zinc-900 tracking-tighter uppercase">Ponto da Chipa</h1>
+          </motion.div>
+          
+          <h2 className="text-xl font-bold text-zinc-800 tracking-tight">Bem-vindo de volta</h2>
+          <p className="mt-1.5 text-[11px] font-bold text-zinc-400 uppercase tracking-widest">Sistema de Gestão Interna</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-10">
+          {/* Feedback de Erro */}
+          <AnimatePresence>
+            {erro && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0, y: -10 }}
+                animate={{ opacity: 1, height: 'auto', y: 0 }}
+                exit={{ opacity: 0, height: 0, y: -10 }}
+                className="flex items-start gap-3 bg-red-50 border border-red-100 text-red-600 rounded-2xl px-5 py-4 text-xs overflow-hidden"
+              >
+                <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                <span className="font-medium leading-relaxed">{erro}</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Email Input with Animated Label */}
+          <div className="relative z-0 group/field">
+            <input
+              type="email"
+              id="floating_email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={isPending}
+              className="block py-3 px-0 w-full text-sm font-bold text-zinc-900 bg-transparent border-0 border-b-2 border-zinc-100 appearance-none focus:outline-none focus:ring-0 focus:border-red-500 peer transition-all duration-300"
+              placeholder=" "
+              required
+            />
+            {/* Animated Underline (Premium) */}
+            <div className="absolute bottom-0 left-0 w-0 h-0.5 bg-red-500 transition-all duration-500 peer-focus:w-full" />
+            
+            <label
+              htmlFor="floating_email"
+              className="absolute text-[11px] font-bold text-zinc-400 uppercase tracking-widest duration-300 transform -translate-y-8 scale-90 top-3 -z-10 origin-[0] peer-focus:left-0 peer-focus:text-red-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-90 peer-focus:-translate-y-8 cursor-text group-hover/field:text-zinc-500 transition-all ease-in-out flex items-center"
+            >
+              <User className="mr-2 transition-transform duration-300 peer-focus:scale-110" size={14} />
+              E-mail
+            </label>
+          </div>
+
+          {/* Password Input with Animated Label */}
+          <div className="relative z-0 group/field">
+            <input
+              type={showSenha ? "text" : "password"}
+              id="floating_password"
+              value={senha}
+              onChange={(e) => setSenha(e.target.value)}
+              disabled={isPending}
+              className="block py-3 px-0 w-full text-sm font-bold text-zinc-900 bg-transparent border-0 border-b-2 border-zinc-100 appearance-none focus:outline-none focus:ring-0 focus:border-red-500 peer transition-all duration-300 pr-10"
+              placeholder=" "
+              required
+            />
+            {/* Animated Underline (Premium) */}
+            <div className="absolute bottom-0 left-0 w-0 h-0.5 bg-red-500 transition-all duration-500 peer-focus:w-full" />
+
+            <label
+              htmlFor="floating_password"
+              className="absolute text-[11px] font-bold text-zinc-400 uppercase tracking-widest duration-300 transform -translate-y-8 scale-90 top-3 -z-10 origin-[0] peer-focus:left-0 peer-focus:text-red-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-90 peer-focus:-translate-y-8 cursor-text group-hover/field:text-zinc-500 transition-all ease-in-out flex items-center"
+            >
+              <Lock className="mr-2 transition-transform duration-300 peer-focus:scale-110" size={14} />
+              Senha
+            </label>
+            <button
+              type="button"
+              onClick={() => setShowSenha(!showSenha)}
+              className="absolute right-0 top-3 text-zinc-300 hover:text-zinc-600 transition-colors"
+              tabIndex={-1}
+            >
+              {showSenha ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+
+          <div className="flex items-center justify-end -mt-6">
+            <button 
+              type="button"
+              onClick={() => router.push('/forgot-password')}
+              className="text-[10px] font-bold text-zinc-400 hover:text-red-500 uppercase tracking-widest transition-colors"
+            >
+              Esqueci minha senha
+            </button>
+          </div>
+          
+          <motion.button
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.98 }}
+            type="submit"
+            disabled={isPending}
+            className="group w-full h-14 flex items-center justify-center bg-zinc-900 hover:bg-zinc-800 disabled:bg-zinc-200 disabled:text-zinc-400 rounded-2xl text-white font-black text-[11px] uppercase tracking-[0.2em] shadow-[0_20px_40px_-12px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.1)] transition-all duration-300"
+          >
+            {isPending ? (
+              <div className="flex items-center gap-3">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span>Autenticando</span>
+              </div>
+            ) : (
+              <>
+                <span>Acessar Painel</span>
+                <ArrowRight className="ml-3 h-4 w-4 transform group-hover:translate-x-1 transition-transform" />
+              </>
+            )}
+          </motion.button>
+        </form>
+        
+        <div className="text-center">
+          <div className="flex items-center justify-center gap-2">
+            <div className="h-px w-8 bg-zinc-100" />
+            <span className="text-[10px] font-bold text-zinc-300 uppercase tracking-[0.4em]">
+              Seguro
+            </span>
+            <div className="h-px w-8 bg-zinc-100" />
+          </div>
+        </div>
+      </div>
+    </motion.div>
   );
 }

@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { useProdutos } from '@/hooks/use-produtos'
 import { usePedidosAtendente } from '@/hooks/use-pedidos-atendente'
+import { useMesas } from '@/hooks/use-mesas'
 import { toast } from 'sonner'
 import { PedidoFrontend } from '@/hooks/use-pedidos-atendente'
 import { useMediaQuery } from '@/hooks/use-media-query'
@@ -32,10 +33,12 @@ interface CartItem {
 
 export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoModalMobileProps) {
   const { produtos } = useProdutos({ status: 'disponivel' })
+  const { mesas } = useMesas()
   const { mutate } = usePedidosAtendente()
   const isDesktop = useMediaQuery("(min-width: 768px)")
 
   const [tipo, setTipo] = useState<'LOCAL' | 'VIAGEM'>(pedidoEdicao?.tipo || 'LOCAL')
+  const [mesaId, setMesaId] = useState<string | null>(pedidoEdicao?.mesaId || null)
   const [observacao, setObservacao] = useState(pedidoEdicao?.observacao || '')
   
   const [busca, setBusca] = useState('')
@@ -93,13 +96,18 @@ export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoMo
       return
     }
 
+    if (tipo === 'LOCAL' && !mesaId) {
+      toast.error('Selecione uma mesa para consumo local.')
+      return
+    }
+
     try {
       setIsSubmitting(true)
 
       const payload = {
         tipo,
         observacao: observacao.trim() || null,
-        mesaId: null,
+        mesaId: tipo === 'LOCAL' ? mesaId : null,
         itens: carrinho.map(c => ({ produtoId: c.produtoId, quantidade: c.quantidade }))
       }
 
@@ -212,6 +220,44 @@ export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoMo
             </button>
           ))}
         </div>
+
+        {/* Seleção de Mesa (Apenas para LOCAL) */}
+        {tipo === 'LOCAL' && (
+          <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="flex items-center justify-between px-1">
+              <label className="text-[11px] font-black text-zinc-400 uppercase tracking-widest">Selecione a Mesa</label>
+              <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-100 uppercase tracking-tighter">Obrigatório</span>
+            </div>
+            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none snap-x">
+              {mesas.map((mesa) => {
+                const isOccupied = mesa.pedidos.length > 0
+                const isSelected = mesaId === mesa.id
+
+                return (
+                  <button
+                    key={mesa.id}
+                    type="button"
+                    onClick={() => !isOccupied && setMesaId(mesa.id)}
+                    className={cn(
+                      "relative flex-shrink-0 w-16 h-16 rounded-2xl border-2 transition-all duration-200 snap-center flex flex-col items-center justify-center gap-0.5",
+                      isSelected
+                        ? "bg-zinc-900 border-zinc-900 text-white shadow-lg scale-105"
+                        : isOccupied
+                          ? "bg-zinc-100 border-zinc-100 text-zinc-400 cursor-not-allowed opacity-60"
+                          : "bg-white border-zinc-100 text-zinc-600 hover:border-zinc-300"
+                    )}
+                  >
+                    <span className="text-[10px] font-bold uppercase tracking-tighter leading-none">Mesa</span>
+                    <span className="text-xl font-black tabular-nums leading-none">{mesa.numero}</span>
+                    {isOccupied && !isSelected && (
+                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full border-2 border-white shadow-sm" title="Ocupada" />
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         <div className="relative">
           <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" strokeWidth={1.5} />

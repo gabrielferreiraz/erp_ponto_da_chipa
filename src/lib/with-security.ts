@@ -9,6 +9,7 @@ import { getClientIP } from '@/lib/validations/common'
  */
 interface SecurityOptions {
   roles?: ('ADMIN' | 'CAIXA' | 'ATENDENTE')[]
+  public?: boolean
   rateLimit?: {
     limit: number
     windowMs: number
@@ -55,23 +56,26 @@ export function withSecurity(
       }
     }
 
-    // 2. Autenticação e Autorização
-    const session = await auth()
-    
-    if (!session?.user) {
-      SecurityLogger.log({ event: 'UNAUTHORIZED', route, ip })
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
-    }
+    // 2. Autenticação e Autorização (se não for público)
+    let session = null
+    if (!options.public) {
+      session = await auth()
+      
+      if (!session?.user) {
+        SecurityLogger.log({ event: 'UNAUTHORIZED', route, ip })
+        return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+      }
 
-    if (options.roles && !options.roles.includes(session.user.role as any)) {
-      SecurityLogger.log({ 
-        event: 'FORBIDDEN', 
-        route, 
-        ip, 
-        userId: session.user.id, 
-        role: session.user.role 
-      })
-      return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
+      if (options.roles && !options.roles.includes(session.user.role as any)) {
+        SecurityLogger.log({ 
+          event: 'FORBIDDEN', 
+          route, 
+          ip, 
+          userId: session.user.id, 
+          role: session.user.role 
+        })
+        return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
+      }
     }
 
     // 3. Execução do Handler com Try/Catch para Auditoria de 5xx
@@ -82,7 +86,7 @@ export function withSecurity(
         event: 'SERVER_ERROR',
         route,
         ip,
-        userId: session.user.id,
+        userId: session?.user?.id,
         details: error.message
       })
       // Nunca expor stack trace

@@ -34,30 +34,22 @@ export async function GET(req: Request) {
 
   const customReadable = new ReadableStream({
     start(controller) {
-      const encoder = new TextEncoder()
-      
-      const send = (msg: string) => {
-        controller.enqueue(encoder.encode(msg))
-      }
-
-      // 4. Enviar padding inicial (2KB) para forçar o flush em proxies/browsers
-      send(': ' + ' '.repeat(2048) + '\n\n')
-      send('event: connected\ndata: ok\n\n')
+      controller.enqueue('event: connected\ndata: ok\n\n')
 
       const handlerNovoPedido = () => {
-        send('event: novo_pedido\ndata: {}\n\n')
+        controller.enqueue('event: novo_pedido\ndata: {}\n\n')
       }
 
       const handlerPedidoPago = () => {
-        send('event: pedido_pago\ndata: {}\n\n')
+        controller.enqueue('event: pedido_pago\ndata: {}\n\n')
       }
 
       sseEmitter.on('novo_pedido', handlerNovoPedido)
       sseEmitter.on('pedido_pago', handlerPedidoPago)
 
       const interval = setInterval(() => {
-        send('event: ping\ndata: ping\n\n')
-      }, 5000) // Reduzido de 15s para 5s para manter conexão mais "quente" em proxies
+        controller.enqueue('event: ping\ndata: ping\n\n')
+      }, 15000)
 
       req.signal.addEventListener('abort', () => {
         clearInterval(interval)
@@ -74,7 +66,6 @@ export async function GET(req: Request) {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache, no-transform',
       'Connection': 'keep-alive',
-      'X-Accel-Buffering': 'no', // Desabilita buffering no Nginx
     }
   })
 }

@@ -1,86 +1,47 @@
 import { prisma } from '@/lib/prisma'
 import { TokenService } from './token.service'
 import { SecurityLogger } from '@/lib/security-logger'
-import { EmailService } from './email.service'
-import bcrypt from 'bcryptjs'
 
 export class AuthService {
   private tokenService = new TokenService()
-  private emailService = new EmailService()
-  private readonly verificationRoute = '/api/auth/verify-email'
-  private readonly passwordResetRoute = '/api/auth/reset-password'
-
-  /**
-   * Solicita envio de verificação de email sem revelar existência de conta
-   */
-  async requestEmailVerification(email: string, ip: string) {
-    const user = await prisma.usuario.findUnique({
-      where: { email },
-      select: { id: true, email: true, ativo: true, emailVerified: true },
-    })
-
-    if (user && user.ativo && !user.emailVerified) {
-      const token = await this.tokenService.generateVerificationToken(user.email)
-      await this.emailService.sendVerificationEmail(user.email, token)
-      SecurityLogger.log({
-        event: 'EMAIL_VERIFICATION_SENT',
-        route: `${this.verificationRoute}/request`,
-        ip,
-        userId: user.id,
-      })
-    }
-
-    return { success: true }
-  }
 
   /**
    * Processa a verificação de email via token
    */
   async verifyEmail(token: string, ip: string) {
-    const consumedToken = await this.tokenService.consumeVerificationToken(token)
+    const existingToken = await this.tokenService.verifyEmailToken(token)
 
-    if (consumedToken.status === 'invalid') {
+    if (!existingToken) {
       SecurityLogger.log({
-        event: 'TOKEN_INVALID',
-        route: `${this.verificationRoute}/confirm`,
+        event: 'UNAUTHORIZED',
+        route: '/api/auth/verify-email',
         ip,
-        details: 'Token de verificação inválido',
-      })
-      throw new Error('Token inválido ou expirado')
-    }
-
-    if (consumedToken.status === 'expired') {
-      SecurityLogger.log({
-        event: 'TOKEN_EXPIRED',
-        route: `${this.verificationRoute}/confirm`,
-        ip,
-        details: 'Token de verificação expirado',
+        details: 'Token de verificação inválido ou expirado'
       })
       throw new Error('Token inválido ou expirado')
     }
 
     const user = await prisma.usuario.findUnique({
-      where: { email: consumedToken.email },
-      select: { id: true, emailVerified: true },
+      where: { email: existingToken.email }
     })
 
     if (!user) {
-      throw new Error('Token inválido ou expirado')
+      throw new Error('Usuário não encontrado')
     }
 
-    if (!user.emailVerified) {
-      await prisma.usuario.update({
-        where: { id: user.id },
-        data: { emailVerified: new Date() },
-      })
-    }
+    await prisma.usuario.update({
+      where: { id: user.id },
+      data: { emailVerified: new Date() }
+    })
+
+    await this.tokenService.deleteVerificationToken(existingToken.id)
 
     SecurityLogger.log({
-      event: 'EMAIL_VERIFICATION_COMPLETED',
-      route: `${this.verificationRoute}/confirm`,
+      event: 'LOGIN_SUCCESS', // Usando um evento existente ou mapeando para sucesso de ação
+      route: '/api/auth/verify-email',
       ip,
       userId: user.id,
-      details: 'Email verificado com sucesso',
+      details: 'Email verificado com sucesso'
     })
 
     return { success: true }
@@ -91,73 +52,73 @@ export class AuthService {
    */
   async requestPasswordReset(email: string, ip: string) {
     const user = await prisma.usuario.findUnique({
-      where: { email },
-      select: { id: true, email: true, ativo: true },
+      where: { email }
     })
 
     // Resposta neutra mesmo se o usuário não existir (R2: Não revelar se email existe)
-    if (user?.ativo) {
-      const token = await this.tokenService.generatePasswordResetToken(user.email)
-      await this.emailService.sendPasswordResetEmail(user.email, token)
+    if (!user || !user.ativo) {
       SecurityLogger.log({
-        event: 'PASSWORD_RESET_REQUESTED',
-        route: `${this.passwordResetRoute}/request`,
+        event: 'UNAUTHORIZED',
+        route: '/api/auth/reset-password/request',
         ip,
-        userId: user.id,
+        details: `Solicitação de reset para email inexistente ou inativo: ${email}`
       })
+      return { success: true } 
     }
 
+    const token = await this.tokenService.generatePasswordResetToken(email)
+    
+    // Em produção aqui enviaria o email. Logamos o evento.
+    SecurityLogger.log({
+      event: 'LOGIN_SUCCESS',
+      route: '/api/auth/reset-password/request',
+      ip,
+      userId: user.id,
+      details: 'Token de reset de senha gerado'
+    })
+
+    // Para fins de desenvolvimento/teste, poderíamos retornar o token se em ambiente DEV, 
+    // mas em PROD nunca retornamos.
     return { success: true }
   }
 
   /**
    * Confirma reset de senha
    */
-  async confirmPasswordReset(token: string, novaSenha: string, ip: string) {
-    const consumedToken = await this.tokenService.consumePasswordResetToken(token)
+  async confirmPasswordReset(email: string, token: string, novaSenha: string, ip: string) {
+    const existingToken = await this.tokenService.verifyPasswordResetToken(email, token)
 
-    if (consumedToken.status === 'invalid') {
+    if (!existingToken) {
       SecurityLogger.log({
-        event: 'TOKEN_INVALID',
-        route: `${this.passwordResetRoute}/confirm`,
+        event: 'UNAUTHORIZED',
+        route: '/api/auth/reset-password/confirm',
         ip,
-        details: 'Token de reset inválido',
-      })
-      throw new Error('Token inválido ou expirado')
-    }
-
-    if (consumedToken.status === 'expired') {
-      SecurityLogger.log({
-        event: 'TOKEN_EXPIRED',
-        route: `${this.passwordResetRoute}/confirm`,
-        ip,
-        details: 'Token de reset expirado',
+        details: 'Token de reset inválido ou expirado'
       })
       throw new Error('Token inválido ou expirado')
     }
 
     const user = await prisma.usuario.findUnique({
-      where: { email: consumedToken.email },
-      select: { id: true, ativo: true },
+      where: { email: existingToken.email }
     })
 
-    if (!user || !user.ativo) throw new Error('Token inválido ou expirado')
-    const hashedSenha = await bcrypt.hash(novaSenha, 12)
+    if (!user) throw new Error('Usuário não encontrado')
+
+    const hashedSenha = await (require('bcryptjs')).hash(novaSenha, 12)
 
     await prisma.usuario.update({
       where: { id: user.id },
-      data: {
-        senha: hashedSenha,
-        sessionVersion: { increment: 1 },
-      },
+      data: { senha: hashedSenha }
     })
 
+    await this.tokenService.deletePasswordResetToken(existingToken.id)
+
     SecurityLogger.log({
-      event: 'PASSWORD_RESET_COMPLETED',
-      route: `${this.passwordResetRoute}/confirm`,
+      event: 'LOGIN_SUCCESS',
+      route: '/api/auth/reset-password/confirm',
       ip,
       userId: user.id,
-      details: 'Senha alterada com sucesso via reset',
+      details: 'Senha alterada com sucesso via reset'
     })
 
     return { success: true }

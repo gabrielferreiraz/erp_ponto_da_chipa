@@ -12,19 +12,7 @@ export class SecurityLogger {
   }
 
   static log(event: {
-    event:
-      | 'LOGIN_SUCCESS'
-      | 'LOGIN_FAILURE'
-      | 'UNAUTHORIZED'
-      | 'FORBIDDEN'
-      | 'RATE_LIMIT'
-      | 'SERVER_ERROR'
-      | 'EMAIL_VERIFICATION_SENT'
-      | 'EMAIL_VERIFICATION_COMPLETED'
-      | 'PASSWORD_RESET_REQUESTED'
-      | 'PASSWORD_RESET_COMPLETED'
-      | 'TOKEN_INVALID'
-      | 'TOKEN_EXPIRED'
+    event: 'LOGIN_SUCCESS' | 'LOGIN_FAILURE' | 'UNAUTHORIZED' | 'FORBIDDEN' | 'RATE_LIMIT' | 'SERVER_ERROR'
     route: string
     userId?: string
     role?: string

@@ -1,70 +1,43 @@
 import { prisma } from '@/lib/prisma'
-import { createHmac, randomUUID } from 'crypto'
+import bcrypt from 'bcryptjs'
+import { randomUUID } from 'crypto'
 
 export class TokenService {
-  private getTokenSecret() {
-    const secret = process.env.NEXTAUTH_SECRET
-    if (!secret) {
-      throw new Error('NEXTAUTH_SECRET não configurado')
-    }
-    return secret
-  }
-
-  private hashToken(token: string) {
-    return createHmac('sha256', this.getTokenSecret()).update(token).digest('hex')
-  }
-
   /**
    * Gera um token de verificação de email (expira em 24h)
    */
   async generateVerificationToken(email: string) {
     const token = randomUUID()
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000)
-    const tokenHash = this.hashToken(token)
+    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000)
 
     // Remove tokens antigos para o mesmo email
     await prisma.verificationToken.deleteMany({
       where: { email }
     })
 
-    await prisma.verificationToken.create({
+    const verificationToken = await prisma.verificationToken.create({
       data: {
         email,
-        tokenHash,
-        expiresAt,
+        token, 
+        expires,
       }
     })
 
-    return token
+    return verificationToken
   }
 
   /**
    * Valida um token de verificação de email
    */
-  private async invalidateVerificationToken(id: string) {
-    await prisma.verificationToken.deleteMany({ where: { id } })
-  }
+  async verifyEmailToken(token: string) {
+    const existingToken = await prisma.verificationToken.findUnique({
+      where: { token }
+    })
 
-  private async invalidatePasswordResetToken(id: string) {
-    await prisma.passwordResetToken.deleteMany({ where: { id } })
-  }
+    if (!existingToken) return null
+    if (new Date() > existingToken.expires) return null
 
-  async consumeVerificationToken(token: string): Promise<{
-    status: 'valid' | 'invalid' | 'expired'
-    email?: string
-  }> {
-    const tokenHash = this.hashToken(token)
-    const existingToken = await prisma.verificationToken.findUnique({ where: { tokenHash } })
-
-    if (!existingToken) return { status: 'invalid' }
-
-    if (new Date() > existingToken.expiresAt) {
-      await this.invalidateVerificationToken(existingToken.id)
-      return { status: 'expired' }
-    }
-
-    await this.invalidateVerificationToken(existingToken.id)
-    return { status: 'valid', email: existingToken.email }
+    return existingToken
   }
 
   /**
@@ -73,8 +46,10 @@ export class TokenService {
    */
   async generatePasswordResetToken(email: string) {
     const token = randomUUID()
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hora
-    const tokenHash = this.hashToken(token)
+    const expires = new Date(Date.now() + 60 * 60 * 1000) // 1 hora
+    
+    // Hash do token para salvar no banco (R5: Nunca salvar token bruto sensível)
+    const hashedToken = await bcrypt.hash(token, 10)
 
     await prisma.passwordResetToken.deleteMany({
       where: { email }
@@ -83,8 +58,8 @@ export class TokenService {
     await prisma.passwordResetToken.create({
       data: {
         email,
-        tokenHash,
-        expiresAt,
+        token: hashedToken,
+        expires,
       }
     })
 
@@ -94,35 +69,28 @@ export class TokenService {
   /**
    * Valida um token de reset de senha
    */
-  async consumePasswordResetToken(rawToken: string): Promise<{
-    status: 'valid' | 'invalid' | 'expired'
-    email?: string
-  }> {
-    const tokenHash = this.hashToken(rawToken)
-    const existingToken = await prisma.passwordResetToken.findUnique({ where: { tokenHash } })
+  async verifyPasswordResetToken(email: string, rawToken: string) {
+    const existingToken = await prisma.passwordResetToken.findFirst({
+      where: { email }
+    })
 
-    if (!existingToken) return { status: 'invalid' }
+    if (!existingToken) return null
+    if (new Date() > existingToken.expires) return null
 
-    if (new Date() > existingToken.expiresAt) {
-      await this.invalidatePasswordResetToken(existingToken.id)
-      return { status: 'expired' }
-    }
+    const isValid = await bcrypt.compare(rawToken, existingToken.token)
+    if (!isValid) return null
 
-    await this.invalidatePasswordResetToken(existingToken.id)
-    return { status: 'valid', email: existingToken.email }
+    return existingToken
   }
 
-  async deleteExpiredTokens() {
-    const now = new Date()
-    await prisma.verificationToken.deleteMany({ where: { expiresAt: { lt: now } } })
-    await prisma.passwordResetToken.deleteMany({ where: { expiresAt: { lt: now } } })
-  }
-
+  /**
+   * Remove tokens após o uso
+   */
   async deletePasswordResetToken(id: string) {
-    await this.invalidatePasswordResetToken(id)
+    await prisma.passwordResetToken.delete({ where: { id } })
   }
 
   async deleteVerificationToken(id: string) {
-    await this.invalidateVerificationToken(id)
+    await prisma.verificationToken.delete({ where: { id } })
   }
 }

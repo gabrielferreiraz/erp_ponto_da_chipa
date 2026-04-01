@@ -15,7 +15,6 @@ model Usuario {
   role          Role      @default(ATENDENTE)
   ativo         Boolean   @default(true)
   emailVerified DateTime?
-  sessionVersion Int      @default(0)
   criadoEm      DateTime  @default(now())
 
   pedidosCriados   Pedido[]              @relation("AtendentePedido")
@@ -30,22 +29,20 @@ model Usuario {
 model VerificationToken {
   id      String   @id @default(cuid())
   email   String
-  tokenHash String @unique
-  expiresAt DateTime
-  createdAt DateTime @default(now())
+  token   String   @unique
+  expires DateTime
 
-  @@index([email])
+  @@unique([email, token])
   @@map("verification_tokens")
 }
 
 model PasswordResetToken {
   id      String   @id @default(cuid())
   email   String
-  tokenHash String @unique
-  expiresAt DateTime
-  createdAt DateTime @default(now())
+  token   String   @unique
+  expires DateTime
 
-  @@index([email])
+  @@unique([email, token])
   @@map("password_reset_tokens")
 }
 
