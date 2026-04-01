@@ -12,11 +12,11 @@ if (!globalSSE.activeConnections) {
 export const sseManager = {
   /**
    * Adiciona uma conexão e retorna se é permitida.
-   * Limite de 3 conexões simultâneas por IP/Sessão.
+   * Limite de 10 conexões simultâneas por IP/Sessão.
    */
   addConnection(key: string): boolean {
     const current = globalSSE.activeConnections!.get(key) || 0
-    if (current >= 3) return false
+    if (current >= 10) return false
     
     globalSSE.activeConnections!.set(key, current + 1)
     return true

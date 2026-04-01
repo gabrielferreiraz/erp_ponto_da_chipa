@@ -102,7 +102,7 @@ export function Sidebar({ user }: SidebarProps) {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-4 space-y-1.5 overflow-y-auto scrollbar-none overflow-x-hidden">
+        <nav className="flex-1 px-4 space-y-1.5 overflow-y-auto no-scrollbar overflow-x-hidden">
           {navItems.map((item) => {
             const isActive = pathname === item.href
             return (

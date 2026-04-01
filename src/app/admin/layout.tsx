@@ -39,7 +39,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-6 lg:p-10 scrollbar-none">
+        <main className="flex-1 overflow-y-auto p-6 lg:p-10 no-scrollbar">
           <div className="mx-auto max-w-[1400px]">
             {children}
           </div>

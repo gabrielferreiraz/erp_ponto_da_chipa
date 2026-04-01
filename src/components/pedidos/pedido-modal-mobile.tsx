@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Plus, Search, Minus, ShoppingBag, Package, X } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Drawer } from 'vaul'
@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { useProdutos } from '@/hooks/use-produtos'
 import { usePedidosAtendente } from '@/hooks/use-pedidos-atendente'
 import { useMesas } from '@/hooks/use-mesas'
+import { useCategorias } from '@/hooks/use-categorias'
 import { toast } from 'sonner'
 import { PedidoFrontend } from '@/hooks/use-pedidos-atendente'
 import { useMediaQuery } from '@/hooks/use-media-query'
@@ -32,8 +33,9 @@ interface CartItem {
 }
 
 export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoModalMobileProps) {
-  const { produtos } = useProdutos({ status: 'disponivel' })
-  const { mesas } = useMesas()
+  const { produtos, isLoading: loadingProdutos } = useProdutos({ status: 'disponivel' })
+  const { mesas, isLoading: loadingMesas } = useMesas()
+  const { categorias } = useCategorias()
   const { mutate } = usePedidosAtendente()
   const isDesktop = useMediaQuery("(min-width: 768px)")
 
@@ -42,6 +44,19 @@ export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoMo
   const [observacao, setObservacao] = useState(pedidoEdicao?.observacao || '')
   
   const [busca, setBusca] = useState('')
+  const [categoriaAtiva, setCategoriaAtiva] = useState<string>('all')
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+
+  // Efeito para subir o scroll apenas quando a busca ou categoria mudar
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }, [busca, categoriaAtiva])
+
+  const handleBuscaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setBusca(e.target.value)
+  }
   const [carrinho, setCarrinho] = useState<CartItem[]>(
     pedidoEdicao ? pedidoEdicao.itens.map(i => ({
       produtoId: i.produtoId,
@@ -53,7 +68,11 @@ export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoMo
   )
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const produtosFiltrados = produtos.filter(p => p.nome.toLowerCase().includes(busca.toLowerCase()))
+  const produtosFiltrados = produtos.filter(p => {
+    const matchesBusca = p.nome.toLowerCase().includes(busca.toLowerCase())
+    const matchesCategoria = categoriaAtiva === 'all' || p.categoriaId === categoriaAtiva
+    return matchesBusca && matchesCategoria
+  })
 
   const totalCarrinho = carrinho.reduce((acc, curr) => acc + (curr.preco * curr.quantidade), 0)
 
@@ -143,8 +162,8 @@ export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoMo
 
   const formatMoney = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val)
 
-  // Conteúdo Compartilhado entre Dialog e Drawer
-  const InnerContent = () => (
+  // Conteúdo Renderizado (Variável para evitar anti-padrão de componente dentro de componente)
+  const renderContent = (
     <>
       <style jsx global>{`
         ::selection {
@@ -228,33 +247,42 @@ export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoMo
               <label className="text-[11px] font-black text-zinc-400 uppercase tracking-widest">Selecione a Mesa</label>
               <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-100 uppercase tracking-tighter">Obrigatório</span>
             </div>
-            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none snap-x">
-              {mesas.map((mesa) => {
-                const isOccupied = mesa.pedidos.length > 0
-                const isSelected = mesaId === mesa.id
+            <div className="relative">
+              <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar snap-x scroll-smooth px-1" 
+                   style={{ maskImage: 'linear-gradient(to right, transparent, black 5%, black 90%, transparent)' }}>
+                {loadingMesas ? (
+                  Array.from({ length: 5 }).map((_, idx) => (
+                    <div key={idx} className="w-16 h-16 rounded-2xl bg-zinc-100 shimmer shrink-0" />
+                  ))
+                ) : (
+                  mesas.map((mesa) => {
+                    const isOccupied = mesa.pedidos.length > 0
+                    const isSelected = mesaId === mesa.id
 
-                return (
-                  <button
-                    key={mesa.id}
-                    type="button"
-                    onClick={() => !isOccupied && setMesaId(mesa.id)}
-                    className={cn(
-                      "relative flex-shrink-0 w-16 h-16 rounded-2xl border-2 transition-all duration-200 snap-center flex flex-col items-center justify-center gap-0.5",
-                      isSelected
-                        ? "bg-zinc-900 border-zinc-900 text-white shadow-lg scale-105"
-                        : isOccupied
-                          ? "bg-zinc-100 border-zinc-100 text-zinc-400 cursor-not-allowed opacity-60"
-                          : "bg-white border-zinc-100 text-zinc-600 hover:border-zinc-300"
-                    )}
-                  >
-                    <span className="text-[10px] font-bold uppercase tracking-tighter leading-none">Mesa</span>
-                    <span className="text-xl font-black tabular-nums leading-none">{mesa.numero}</span>
-                    {isOccupied && !isSelected && (
-                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full border-2 border-white shadow-sm" title="Ocupada" />
-                    )}
-                  </button>
-                )
-              })}
+                    return (
+                      <button
+                        key={mesa.id}
+                        type="button"
+                        onClick={() => !isOccupied && setMesaId(mesa.id)}
+                        className={cn(
+                          "relative flex-shrink-0 w-16 h-16 rounded-2xl border-2 transition-all duration-200 snap-center flex flex-col items-center justify-center gap-0.5",
+                          isSelected
+                            ? "bg-zinc-900 border-zinc-900 text-white shadow-lg scale-105"
+                            : isOccupied
+                              ? "bg-zinc-100 border-zinc-100 text-zinc-400 cursor-not-allowed opacity-60"
+                              : "bg-white border-zinc-100 text-zinc-600 hover:border-zinc-300"
+                        )}
+                      >
+                        <span className="text-[10px] font-bold uppercase tracking-tighter leading-none">Mesa</span>
+                        <span className="text-xl font-black tabular-nums leading-none">{mesa.numero}</span>
+                        {isOccupied && !isSelected && (
+                          <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full border-2 border-white shadow-sm" title="Ocupada" />
+                        )}
+                      </button>
+                    )
+                  })
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -265,13 +293,50 @@ export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoMo
             placeholder="Buscar chipa, bebida..." 
             className="h-11 rounded-2xl border-none shadow-[0_1px_2px_rgba(0,0,0,0.05),0_8px_16px_-4px_rgba(0,0,0,0.02)] ring-1 ring-zinc-950/[0.04] bg-white pl-10 text-[13px] font-medium transition-all duration-200 focus-visible:ring-2 focus-visible:ring-orange-500/30" 
             value={busca}
-            onChange={(e) => setBusca(e.target.value)}
+            onChange={handleBuscaChange}
           />
+        </div>
+
+        {/* Filtro de Categorias */}
+        <div className="relative">
+          <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar snap-x scroll-smooth px-1"
+               style={{ maskImage: 'linear-gradient(to right, transparent, black 5%, black 90%, transparent)' }}>
+            <button
+              type="button"
+              onClick={() => setCategoriaAtiva('all')}
+              className={cn(
+                "flex-shrink-0 px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all duration-200 snap-start border",
+                categoriaAtiva === 'all'
+                  ? "bg-zinc-900 border-zinc-900 text-white shadow-md scale-105"
+                  : "bg-white border-zinc-100 text-zinc-500 hover:border-zinc-300"
+              )}
+            >
+              Todos
+            </button>
+            {categorias.map((cat) => (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => setCategoriaAtiva(cat.id)}
+                className={cn(
+                  "flex-shrink-0 px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all duration-200 snap-start border",
+                  categoriaAtiva === cat.id
+                    ? "bg-zinc-900 border-zinc-900 text-white shadow-md scale-105"
+                    : "bg-white border-zinc-100 text-zinc-500 hover:border-zinc-300"
+                )}
+              >
+                {cat.nome}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* Grid de Produtos */}
-      <div className="relative z-10 flex-1 overflow-y-auto px-6 py-8 pb-32 bg-[#FAFAFA]">
+      <div 
+        ref={scrollContainerRef}
+        className="relative z-10 flex-1 overflow-y-auto px-6 py-8 pb-32 bg-[#FAFAFA] no-scrollbar"
+      >
         {produtos.length === 0 ? (
            <div className="space-y-4">
              {Array.from({ length: 4 }).map((_, idx) => (
@@ -383,34 +448,31 @@ export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoMo
             placeholder="Ex: Assar bem, separados..." 
             value={observacao}
             onChange={e => setObservacao(e.target.value)}
-            className="min-h-[80px] resize-none rounded-xl border-none shadow-[0_1px_2px_rgba(0,0,0,0.05),0_8px_16px_-4px_rgba(0,0,0,0.02)] bg-white text-[13px] ring-1 ring-zinc-950/[0.04] transition-all focus-visible:ring-2 focus-visible:ring-orange-500/30"
+            className="min-h-[80px] resize-none rounded-xl border-none shadow-[0_1px_2px_rgba(0,0,0,0.05),0_8px_16px_-4px_rgba(0,0,0,0.02)] bg-white text-[13px] ring-1 ring-zinc-950/[0.04] transition-all focus-visible:ring-2 focus-visible:ring-orange-500/30 no-scrollbar"
           />
         </div>
       </div>
 
       {/* Footer Carrinho Fixo */}
       {carrinho.length > 0 && (
-        <div className="absolute bottom-0 left-0 right-0 p-5 bg-white/95 backdrop-blur-xl border-t border-zinc-950/[0.04] shadow-[0_-12px_24px_-8px_rgba(0,0,0,0.06)] z-20 md:rounded-b-[24px]">
-          <div className="flex items-center justify-between mb-4">
-            <div className="space-y-0.5">
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500">Total do Pedido</p>
-              <p className="font-mono text-[24px] font-black tabular-nums tracking-tighter text-zinc-900">
+        <div className="absolute bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-xl border-t border-zinc-950/[0.04] shadow-[0_-12px_24px_-8px_rgba(0,0,0,0.06)] z-20 md:rounded-b-[24px]">
+          <div className="flex items-center justify-between">
+            <div className="flex flex-col">
+              <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-400">Total</span>
+              <span className="font-mono text-xl font-black tabular-nums tracking-tighter text-zinc-900">
                 {formatMoney(totalCarrinho)}
-              </p>
+              </span>
             </div>
-            <div className="px-3 py-1.5 rounded-full bg-orange-50 ring-1 ring-orange-500/10">
-              <span className="text-[12px] font-bold text-orange-600">{carrinho.length} {carrinho.length === 1 ? 'item' : 'itens'}</span>
-            </div>
+            
+            <button 
+              type="button"
+              className="h-12 px-8 rounded-xl bg-gradient-to-r from-[#F29100] via-[#E24A07] to-[#B91C1C] flex items-center justify-center text-[13px] font-black uppercase tracking-widest text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_8px_16px_rgba(226,74,7,0.2)] transition-all active:scale-[0.98] disabled:opacity-50"
+              onClick={handleSavePedido}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? '...' : (pedidoEdicao ? 'SALVAR' : 'ENVIAR')}
+            </button>
           </div>
-
-          <button 
-            type="button"
-            className="w-full h-[56px] rounded-2xl bg-gradient-to-r from-[#F29100] via-[#E24A07] to-[#B91C1C] flex items-center justify-center text-[15px] font-black uppercase tracking-widest text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_8px_24px_rgba(226,74,7,0.35),0_2px_8px_rgba(0,0,0,0.1)] transition-all active:scale-[0.98] disabled:opacity-50 mt-4 sm:mt-6"
-            onClick={handleSavePedido}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? 'SALVANDO...' : (pedidoEdicao ? 'SALVAR EDIÇÃO' : 'ENVIAR PEDIDO')}
-          </button>
         </div>
       )}
     </>
@@ -419,8 +481,8 @@ export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoMo
   if (isDesktop) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-xl w-full h-[85vh] p-0 flex flex-col overflow-hidden border-none shadow-[0_24px_48px_-12px_rgba(0,0,0,0.2)] sm:rounded-[24px]">
-          <InnerContent />
+        <DialogContent className="max-w-xl w-full h-[85vh] p-0 flex flex-col overflow-hidden border-none shadow-[0_24px_48px_-12px_rgba(0,0,0,0.2)] sm:rounded-[24px] no-scrollbar">
+          {renderContent}
         </DialogContent>
       </Dialog>
     )
@@ -430,9 +492,9 @@ export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoMo
     <Drawer.Root open={open} onOpenChange={onOpenChange}>
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 bg-black/40 z-50 backdrop-blur-sm" />
-        <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 flex flex-col h-[94vh] rounded-t-[20px] bg-white overflow-hidden shadow-[0_-24px_48px_-12px_rgba(0,0,0,0.15)] focus:outline-none">
+        <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 flex flex-col h-[94vh] rounded-t-[20px] bg-white overflow-hidden shadow-[0_-24px_48px_-12px_rgba(0,0,0,0.15)] focus:outline-none no-scrollbar">
           <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-zinc-300 mt-4 mb-2" />
-          <InnerContent />
+          {renderContent}
         </Drawer.Content>
       </Drawer.Portal>
     </Drawer.Root>

@@ -19,6 +19,18 @@ export default function PedidosAtendentePage() {
   const { fila: pedidosCaixa, isLoading: loadingCaixa } = useFilaCaixa()
   const [activeFilter, setActiveFilter] = useState<'meus' | 'caixa'>('meus')
 
+  // Cache local para evitar piscadas durante re-fetch em background (SWR)
+  const [pedidosCache, setPedidosCache] = useState<PedidoFrontend[]>([])
+  const [filaCache, setFilaCache] = useState<FilaPedidoFrontend[]>([])
+
+  // Atualiza cache apenas quando os dados novos chegam com sucesso
+  if (pedidos.length > 0 && JSON.stringify(pedidos) !== JSON.stringify(pedidosCache)) {
+    setPedidosCache(pedidos)
+  }
+  if (pedidosCaixa.length > 0 && JSON.stringify(pedidosCaixa) !== JSON.stringify(filaCache)) {
+    setFilaCache(pedidosCaixa)
+  }
+
   const [confirmingId, setConfirmingId] = useState<string | null>(null)
   const [pagarPedido, setPagarPedido] = useState<FilaPedidoFrontend | null>(null)
 
@@ -64,10 +76,13 @@ export default function PedidosAtendentePage() {
     return 'text-emerald-600' // Recente (Verde/Zinco)
   }
 
-  const pedidosAbertos = pedidos.filter(p => p.orderStatus === 'ABERTO')
+  const pedidosParaExibir = pedidosCache.length > 0 ? pedidosCache : pedidos
+  const filaParaExibir = filaCache.length > 0 ? filaCache : pedidosCaixa
+
+  const pedidosAbertos = pedidosParaExibir.filter(p => p.orderStatus === 'ABERTO')
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] p-4 sm:p-6 lg:p-14 max-w-[1600px] mx-auto transition-all duration-200 ease-in-out font-sans overflow-x-hidden pb-40">
+    <div className="min-h-screen bg-[#FAFAFA] p-4 sm:p-6 lg:p-14 max-w-[1600px] mx-auto transition-all duration-200 ease-in-out font-sans overflow-x-hidden pb-40 scroll-smooth">
       
       {/* Header Compacto com Filtros Interativos (Chips) */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 mt-2">
@@ -83,7 +98,8 @@ export default function PedidosAtendentePage() {
         </div>
 
         {/* Chips de Filtro */}
-        <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-1">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 px-1"
+             style={{ maskImage: 'linear-gradient(to right, black 90%, transparent)' }}>
           <button 
             onClick={() => setActiveFilter('meus')}
             className={cn(
@@ -117,7 +133,7 @@ export default function PedidosAtendentePage() {
               "flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full font-mono text-[10px] font-black tabular-nums tracking-tighter transition-colors",
               activeFilter === 'caixa' ? "bg-orange-200/50 text-orange-700" : "bg-zinc-200/50 text-zinc-400"
             )}>
-              {pedidosCaixa.length}
+              {filaParaExibir.length}
             </span>
           </button>
         </div>
@@ -134,7 +150,7 @@ export default function PedidosAtendentePage() {
               transition={{ duration: 0.2 }}
               className="space-y-6"
             >
-              {loadingPedidos ? (
+              {loadingPedidos && pedidosCache.length === 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {[1, 2, 3].map(i => (
                     <div key={i} className="h-48 bg-white border border-zinc-200/50 rounded-3xl animate-pulse shadow-sm" />
@@ -152,7 +168,7 @@ export default function PedidosAtendentePage() {
                 </div>
               ) : (
                 <div 
-                  className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 pb-12"
+                  className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 pb-12 no-scrollbar"
                   style={{ maskImage: pedidosAbertos.length > 3 ? 'linear-gradient(to bottom, black 80%, transparent)' : 'none' }}
                 >
                   {pedidosAbertos.map(pedido => (
@@ -220,14 +236,14 @@ export default function PedidosAtendentePage() {
               transition={{ duration: 0.2 }}
             >
               <div 
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-12"
-                style={{ maskImage: pedidosCaixa.length > 3 ? 'linear-gradient(to bottom, black 80%, transparent)' : 'none' }}
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-12 no-scrollbar"
+                style={{ maskImage: filaParaExibir.length > 3 ? 'linear-gradient(to bottom, black 80%, transparent)' : 'none' }}
               >
-                {loadingCaixa ? (
+                {loadingCaixa && filaCache.length === 0 ? (
                   [1, 2, 3].map(i => (
                     <div key={i} className="h-48 bg-white border border-zinc-200/50 rounded-3xl animate-pulse shadow-sm" />
                   ))
-                ) : pedidosCaixa.length === 0 ? (
+                ) : filaParaExibir.length === 0 ? (
                   <div className="col-span-full flex flex-col items-center justify-center bg-white border border-dashed border-zinc-200 rounded-3xl p-16 text-center space-y-4">
                     <div className="bg-zinc-50 p-6 rounded-full border border-zinc-100">
                       <Banknote className="w-10 h-10 text-zinc-200" strokeWidth={1} />
@@ -238,7 +254,7 @@ export default function PedidosAtendentePage() {
                     </div>
                   </div>
                 ) : (
-                  pedidosCaixa.map(pedido => (
+                  filaParaExibir.map(pedido => (
                     <div key={pedido.id} className="bg-white ring-1 ring-zinc-950/[0.04] rounded-[28px] p-6 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_8px_16px_-4px_rgba(0,0,0,0.02)] border-l-[6px] border-l-orange-500 flex flex-col justify-between gap-6 transition-all duration-300">
                       {/* Top Info */}
                       <div className="flex justify-between items-center bg-zinc-50/50 p-3 -m-3 mb-1 rounded-2xl">

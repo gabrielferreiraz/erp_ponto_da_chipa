@@ -39,7 +39,7 @@ export default async function CaixaLayout({ children }: { children: React.ReactN
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-4 lg:p-8 scrollbar-none">
+        <main className="flex-1 overflow-y-auto p-4 lg:p-8 no-scrollbar">
           <div className="mx-auto max-w-[1600px] h-full">
             {children}
           </div>

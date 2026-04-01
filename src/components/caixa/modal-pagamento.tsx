@@ -109,7 +109,7 @@ export function ModalPagamento({ pedido: stalePedido, onClose }: ModalPagamentoP
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6 scrollbar-none bg-zinc-50/30">
+      <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6 no-scrollbar bg-zinc-50/30">
         {/* Adicionar Itens Rápidos */}
         <div className="relative">
           {!showSearch ? (
@@ -263,7 +263,7 @@ export function ModalPagamento({ pedido: stalePedido, onClose }: ModalPagamentoP
   if (isDesktop) {
     return (
       <Dialog open={!!pedido} onOpenChange={(open) => { if (!isSubmitting) onClose() }}>
-        <DialogContent className="sm:max-w-md p-0 border-none shadow-[0_24px_48px_-12px_rgba(0,0,0,0.2)] sm:rounded-[32px] overflow-hidden focus:outline-none">
+        <DialogContent className="sm:max-w-md p-0 border-none shadow-[0_24px_48px_-12px_rgba(0,0,0,0.2)] sm:rounded-[32px] overflow-hidden focus:outline-none no-scrollbar">
           <InnerContent />
         </DialogContent>
       </Dialog>
@@ -274,7 +274,7 @@ export function ModalPagamento({ pedido: stalePedido, onClose }: ModalPagamentoP
     <Drawer.Root open={!!pedido} onOpenChange={(open) => { if (!open && !isSubmitting && !showSuccess) onClose() }}>
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 bg-black/60 z-50 backdrop-blur-md" />
-        <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 flex flex-col rounded-t-[32px] bg-white shadow-[0_-24px_48px_-12px_rgba(0,0,0,0.2)] focus:outline-none">
+        <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 flex flex-col rounded-t-[32px] bg-white shadow-[0_-24px_48px_-12px_rgba(0,0,0,0.2)] focus:outline-none no-scrollbar">
           <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-zinc-200 mt-4 mb-2" />
           <InnerContent />
         </Drawer.Content>

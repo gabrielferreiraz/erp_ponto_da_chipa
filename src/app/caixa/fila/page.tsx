@@ -84,7 +84,7 @@ export default function FilaCaixaPage() {
       </header>
 
       {/* Grid de Pedidos (A11y: Main Content) */}
-      <main className="flex-1 overflow-x-auto overflow-y-hidden p-6 lg:p-10 scrollbar-none">
+      <main className="flex-1 overflow-x-auto overflow-y-hidden p-6 lg:p-10 no-scrollbar">
         <section 
           aria-label="Fila de pedidos ativos" 
           aria-live="polite"
@@ -161,7 +161,7 @@ export default function FilaCaixaPage() {
                         </div>
                       </CardHeader>
 
-                      <CardContent className="flex-1 px-6 py-0 overflow-y-auto scrollbar-none">
+                      <CardContent className="flex-1 px-6 py-0 overflow-y-auto no-scrollbar">
                         <ul className="space-y-3 border-t border-zinc-100 pt-5">
                           {pedido.itens.map((item) => (
                             <li key={item.id} className="group/item flex items-start justify-between gap-3">

@@ -26,55 +26,17 @@ const fetcher = async (url: string) => {
   return res.json()
 }
 
+import { useSSE } from './use-sse'
+
 export function usePedidosAtendente() {
   const { data, error, isLoading, mutate } = useSWR<PedidoFrontend[]>('/api/pedidos', fetcher, {
-    // SWR usa Realtime via SSE, mas deixamos um polling leve (10s) de segurança caso o SSE falhe/bufferize na rede.
     revalidateOnFocus: true,
     refreshInterval: 10000, 
-    dedupingInterval: 2000, // Evita múltiplos fetches se o SSE e o polling dispararem juntos
+    dedupingInterval: 2000,
   })
 
-  useEffect(() => {
-    let es: EventSource | null = null
-    let retryDelay = 1000
-
-    const connectSSE = () => {
-      es = new EventSource('/api/eventos')
-
-      // Quando entra novo pedido ou status muda
-      es.addEventListener('novo_pedido', () => {
-        mutate() // SWR reacionário - Revalida o cache sem flicker
-      })
-
-      // Quando alguém paga ou manipula pedidos
-      es.addEventListener('pedido_pago', () => {
-        mutate()
-      })
-
-      es.onerror = async () => {
-        if (es) {
-          es.close()
-        }
-        // Fallback REST obrigatório
-        await mutate()
-
-        setTimeout(() => connectSSE(), retryDelay)
-        retryDelay = Math.min(retryDelay * 2, 30000)
-      }
-
-      es.onopen = () => {
-        retryDelay = 1000 // Reset backoff in success
-      }
-    }
-
-    connectSSE()
-
-    return () => {
-      if (es) {
-        es.close()
-      }
-    }
-  }, [mutate])
+  // Compartilha uma única conexão SSE global
+  useSSE()
 
   return {
     pedidos: data || [],

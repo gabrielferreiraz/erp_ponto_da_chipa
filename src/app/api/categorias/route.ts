@@ -6,7 +6,7 @@ import { createCategoriaSchema } from '@/lib/validations/produto'
 export async function GET() {
   const session = await auth()
   if (!session?.user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
-  if (!['ADMIN'].includes(session.user.role)) return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
+  if (!['ADMIN', 'CAIXA', 'ATENDENTE'].includes(session.user.role)) return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
 
   const service = new CategoriaService()
   const categorias = await service.findAll()
