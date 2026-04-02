@@ -10,15 +10,14 @@ export const createProdutoSchema = z.object({
     .max(100, 'Nome muito longo'),
   categoriaId: z.string({ required_error: 'Categoria é obrigatória' }).min(1, 'Categoria é obrigatória'),
   preco: z
-    .coerce
     .number({ 
       required_error: 'Preço é obrigatório',
       invalid_type_error: 'Preço deve ser um número'
     })
     .positive('Preço deve ser positivo'),
-  qtdEstoque: z.coerce.number().int().min(0).default(0),
-  qtdVisor: z.coerce.number().int().min(0).default(0),
-  estoqueMinimo: z.coerce.number().int().min(0).default(5),
+  qtdEstoque: z.number().int().min(0).default(0),
+  qtdVisor: z.number().int().min(0).default(0),
+  estoqueMinimo: z.number().int().min(0).default(5),
   disponivel: z.boolean().default(true),
   imagemUrl: z.string().optional().nullable(),
 })

@@ -40,7 +40,7 @@ export function ProdutoFormDialog({ open, onOpenChange, produto }: Props) {
   const isEditing = !!produto
   
   const { register, handleSubmit, control, formState: { errors, isSubmitting }, reset, setValue } = useForm<FormData>({
-    resolver: zodResolver(createProdutoSchema),
+    resolver: zodResolver(createProdutoSchema) as any,
     defaultValues: {
       nome: '',
       categoriaId: '',

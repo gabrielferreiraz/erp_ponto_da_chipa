@@ -13,7 +13,7 @@ export function LightBackground() {
     <div className="absolute inset-0 w-full h-full overflow-hidden bg-zinc-950">
       {/* Animated Deep Gradient Background */}
       <div className="absolute inset-0 opacity-60">
-        <div className="absolute inset-0 bg-gradient-to-br from-red-900/50 via-zinc-900/70 to-blue-900/50 animate-[pulse_8s_infinite] transition-all duration-[4000ms]" />
+        <div className="absolute inset-0 bg-gradient-to-br from-red-900/50 via-zinc-900/70 to-blue-900/50 animate-[pulse_8s_infinite] transition-all duration-[4s]" />
       </div>
       
       {/* Subtle Pattern Overlay (Plus Signs) */}
