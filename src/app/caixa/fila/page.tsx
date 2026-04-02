@@ -37,13 +37,12 @@ export default function FilaCaixaPage() {
   const handleFaturar = (pedido: FilaPedidoFrontend) => {
     setIsProcessing(pedido.id)
     setPagarPedido(pedido)
-    // O modal cuidará do fechamento e reset do estado de processamento via onClose
   }
 
   return (
     <div className="flex flex-col h-full bg-[#F8F9FA]">
-      {/* Header Minimalista (A11y: Banner) */}
-      <header role="banner" className="h-20 bg-white/80 backdrop-blur-xl border-b border-zinc-200/50 px-6 lg:px-10 flex items-center justify-between sticky top-0 z-10">
+      {/* Header Minimalista */}
+      <header className="h-20 bg-white/80 backdrop-blur-xl border-b border-zinc-200/50 px-6 lg:px-10 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-6">
           <div className="flex flex-col">
             <h1 className="text-[11px] font-black tracking-[0.25em] text-zinc-400 uppercase leading-none">Terminal de Operação</h1>
@@ -74,30 +73,19 @@ export default function FilaCaixaPage() {
               <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">Aguardando</span>
               <span className="font-mono text-sm font-black text-zinc-900 tabular-nums leading-none mt-0.5">{fila.length}</span>
             </div>
-            <div className="w-px h-6 bg-zinc-100" />
-            <div className="flex flex-col items-end">
-              <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">Hoje</span>
-              <span className="font-mono text-sm font-black text-zinc-900 tabular-nums leading-none mt-0.5">--</span>
-            </div>
           </div>
         </div>
       </header>
 
-      {/* Grid de Pedidos (A11y: Main Content) */}
+      {/* Grid de Pedidos */}
       <main className="flex-1 overflow-x-auto overflow-y-hidden p-6 lg:p-10 no-scrollbar">
-        <section 
-          aria-label="Fila de pedidos ativos" 
-          aria-live="polite"
-          className="flex gap-6 h-full items-start pb-4"
-        >
+        <div className="flex gap-6 h-full items-start pb-4">
           <AnimatePresence mode="popLayout">
             {isLoading ? (
-              // Skeleton Loading Compacto
               Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="w-[300px] h-[480px] bg-white rounded-[24px] border border-zinc-200/60 animate-pulse shrink-0 shadow-sm" />
               ))
             ) : fila.length === 0 ? (
-              // Empty State Clean
               <motion.div 
                 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                 className="w-full h-full flex flex-col items-center justify-center space-y-4"
@@ -118,7 +106,6 @@ export default function FilaCaixaPage() {
                 return (
                   <article
                     key={pedido.id}
-                    id={`pedido-${pedido.id}`}
                     className="shrink-0 w-[300px] h-full max-h-[600px]"
                   >
                     <Card className={cn(
@@ -176,7 +163,6 @@ export default function FilaCaixaPage() {
                               <button 
                                 type="button"
                                 onClick={() => setCancelarItem(item)}
-                                aria-label={`Remover ${item.nomeSnapshot}`}
                                 className="opacity-0 group-hover/item:opacity-100 p-1 rounded-lg hover:bg-rose-50 text-zinc-300 hover:text-rose-500 transition-all active:scale-90"
                               >
                                 <XCircle className="w-3.5 h-3.5" strokeWidth={1.5} />
@@ -222,14 +208,10 @@ export default function FilaCaixaPage() {
               })
             )}
           </AnimatePresence>
-        </section>
+        </div>
       </main>
 
-      {/* Modais com reset de estado */}
-      <ModalCancelamento 
-        item={cancelarItem} 
-        onClose={() => setCancelarItem(null)} 
-      />
+      <ModalCancelamento item={cancelarItem} onClose={() => setCancelarItem(null)} />
       <ModalPagamento 
         pedido={pagarPedido} 
         onClose={() => {

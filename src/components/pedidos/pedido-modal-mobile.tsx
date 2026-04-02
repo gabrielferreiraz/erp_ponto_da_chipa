@@ -1,10 +1,9 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Plus, Search, Minus, ShoppingBag, Package, X } from 'lucide-react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Plus, Search, Minus, ShoppingBag, Package, X, MapPin, Clock, Flame } from 'lucide-react'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Drawer } from 'vaul'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { useProdutos } from '@/hooks/use-produtos'
@@ -14,8 +13,8 @@ import { useCategorias } from '@/hooks/use-categorias'
 import { toast } from 'sonner'
 import { PedidoFrontend } from '@/hooks/use-pedidos-atendente'
 import { useMediaQuery } from '@/hooks/use-media-query'
-import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
+import { motion, AnimatePresence } from 'framer-motion'
 
 interface PedidoModalMobileProps {
   open: boolean
@@ -44,8 +43,17 @@ export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoMo
   const [observacao, setObservacao] = useState(pedidoEdicao?.observacao || '')
   
   const [busca, setBusca] = useState('')
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false)
   const [categoriaAtiva, setCategoriaAtiva] = useState<string>('all')
   const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const searchInputRef = useRef<HTMLInputElement>(null)
+
+  // Efeito para focar o input quando expandir a busca
+  useEffect(() => {
+    if (isSearchExpanded && searchInputRef.current) {
+      searchInputRef.current.focus()
+    }
+  }, [isSearchExpanded])
 
   // Efeito para subir o scroll apenas quando a busca ou categoria mudar
   useEffect(() => {
@@ -61,22 +69,36 @@ export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoMo
     pedidoEdicao ? pedidoEdicao.itens.map(i => ({
       produtoId: i.produtoId,
       nome: i.nomeSnapshot,
-      preco: i.precoSnapshot,
+      preco: Number(i.precoSnapshot),
       quantidade: i.quantidade,
       qtdVisor: 999,
     })) : []
   )
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const produtosFiltrados = produtos.filter(p => {
-    const matchesBusca = p.nome.toLowerCase().includes(busca.toLowerCase())
-    const matchesCategoria = categoriaAtiva === 'all' || p.categoriaId === categoriaAtiva
-    return matchesBusca && matchesCategoria
+  const produtosFiltrados = produtos
+    .filter(p => {
+      const matchesBusca = p.nome.toLowerCase().includes(busca.toLowerCase())
+      const matchesCategoria = categoriaAtiva === 'all' || p.categoriaId === categoriaAtiva
+      return matchesBusca && matchesCategoria
+    })
+    .sort((a, b) => (b.sales_count || 0) - (a.sales_count || 0))
+
+  // Identificar top 2 de cada categoria para o badge
+  const top2Ids = new Set<string>()
+  const categs = categoriaAtiva === 'all' ? categorias.map(c => c.id) : [categoriaAtiva]
+  
+  categs.forEach(catId => {
+    const topInCat = produtos
+      .filter(p => p.categoriaId === catId)
+      .sort((a, b) => (b.sales_count || 0) - (a.sales_count || 0))
+      .slice(0, 2)
+    topInCat.forEach(p => top2Ids.add(p.id))
   })
 
   const totalCarrinho = carrinho.reduce((acc, curr) => acc + (curr.preco * curr.quantidade), 0)
 
-  const handleAddToCart = (p: typeof produtos[0]) => {
+  const handleAddToCart = (p: any) => {
     if (p.qtdVisor <= 0) return
 
     setCarrinho(prev => {
@@ -162,9 +184,9 @@ export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoMo
 
   const formatMoney = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val)
 
-  // Conteúdo Renderizado (Variável para evitar anti-padrão de componente dentro de componente)
+  // Conteúdo Renderizado
   const renderContent = (
-    <>
+    <div className="flex flex-col h-full relative overflow-hidden">
       <style jsx global>{`
         ::selection {
           background: #ffe4cc;
@@ -186,18 +208,12 @@ export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoMo
           background-size: 200% 100%;
           animation: shimmer 1.2s ease-in-out infinite;
         }
-        .hitbox-48::after {
-          content: '';
-          position: absolute;
-          inset: -12px;
-          border-radius: 999px;
-        }
       `}</style>
       
       <div className="grain-overlay" />
 
       {/* Header Fixo */}
-      <div className="px-6 py-5 border-b border-zinc-950/[0.04] bg-white shrink-0 relative z-10 space-y-5 rounded-t-[10px] md:rounded-t-[24px]">
+      <div className="px-6 py-5 border-b border-zinc-950/[0.06] bg-white shrink-0 relative z-10 space-y-4 rounded-t-[10px] md:rounded-t-[24px]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5 text-zinc-900">
             <div className="flex items-center justify-center w-8 h-8 rounded-full bg-red-50 border border-red-100">
@@ -206,109 +222,166 @@ export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoMo
             <h2 className="text-lg font-semibold tracking-tight">{pedidoEdicao ? 'Editar Pedido' : 'Novo Pedido'}</h2>
           </div>
           
-          <button 
-            type="button"
-            onClick={() => onOpenChange(false)}
-            className="flex md:hidden items-center justify-center w-8 h-8 rounded-full bg-zinc-100 text-zinc-500 hover:bg-zinc-200 transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Segmented Control de Consumo Animado (Framer Motion) */}
-        <div className="relative flex p-1 bg-zinc-100 rounded-2xl w-full border border-zinc-950/[0.04]">
-          {['LOCAL', 'VIAGEM'].map((option) => (
-            <button
-              key={option}
-              type="button"
-              onClick={() => setTipo(option as 'LOCAL' | 'VIAGEM')}
-              className={cn(
-                "relative z-10 w-1/2 py-2.5 text-[13px] font-semibold tracking-tight rounded-xl transition-colors duration-200",
-                tipo === option ? "text-zinc-900" : "text-zinc-500 hover:text-zinc-700"
-              )}
+          <div className="flex items-center gap-2">
+            {/* Magical Search */}
+            <motion.div 
+              initial={false}
+              animate={{ 
+                width: isSearchExpanded ? (isDesktop ? 300 : 200) : 32,
+                backgroundColor: isSearchExpanded ? "rgb(255 255 255)" : "rgb(244 244 245)"
+              }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
+              className="relative flex items-center h-8 overflow-hidden rounded-full border border-zinc-950/[0.06] shadow-sm"
             >
-              {option === 'LOCAL' ? 'Consumo Local' : 'Viagem'}
-              {tipo === option && (
-                <motion.div
-                  layoutId="active-pill"
-                  className="absolute inset-0 bg-white rounded-xl shadow-[0_1px_2px_rgba(0,0,0,0.05),0_8px_16px_-4px_rgba(0,0,0,0.02)] border border-zinc-950/[0.03]"
-                  transition={{ type: "spring", bounce: 0.15, duration: 0.4 }}
-                  style={{ zIndex: -1 }}
-                />
-              )}
-            </button>
-          ))}
-        </div>
-
-        {/* Seleção de Mesa (Apenas para LOCAL) */}
-        {tipo === 'LOCAL' && (
-          <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
-            <div className="flex items-center justify-between px-1">
-              <label className="text-[11px] font-black text-zinc-400 uppercase tracking-widest">Selecione a Mesa</label>
-              <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-100 uppercase tracking-tighter">Obrigatório</span>
-            </div>
-            <div className="relative">
-              <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar snap-x scroll-smooth px-1" 
-                   style={{ maskImage: 'linear-gradient(to right, transparent, black 5%, black 90%, transparent)' }}>
-                {loadingMesas ? (
-                  Array.from({ length: 5 }).map((_, idx) => (
-                    <div key={idx} className="w-16 h-16 rounded-2xl bg-zinc-100 shimmer shrink-0" />
-                  ))
-                ) : (
-                  mesas.map((mesa) => {
-                    const isOccupied = mesa.pedidos.length > 0
-                    const isSelected = mesaId === mesa.id
-
-                    return (
-                      <button
-                        key={mesa.id}
-                        type="button"
-                        onClick={() => !isOccupied && setMesaId(mesa.id)}
-                        className={cn(
-                          "relative flex-shrink-0 w-16 h-16 rounded-2xl border-2 transition-all duration-200 snap-center flex flex-col items-center justify-center gap-0.5",
-                          isSelected
-                            ? "bg-zinc-900 border-zinc-900 text-white shadow-lg scale-105"
-                            : isOccupied
-                              ? "bg-zinc-100 border-zinc-100 text-zinc-400 cursor-not-allowed opacity-60"
-                              : "bg-white border-zinc-100 text-zinc-600 hover:border-zinc-300"
-                        )}
-                      >
-                        <span className="text-[10px] font-bold uppercase tracking-tighter leading-none">Mesa</span>
-                        <span className="text-xl font-black tabular-nums leading-none">{mesa.numero}</span>
-                        {isOccupied && !isSelected && (
-                          <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full border-2 border-white shadow-sm" title="Ocupada" />
-                        )}
-                      </button>
-                    )
-                  })
+              <button
+                type="button"
+                onClick={() => setIsSearchExpanded(true)}
+                className="flex items-center justify-center w-8 h-8 shrink-0 text-zinc-500 hover:text-zinc-900 transition-colors"
+              >
+                <Search className="w-4 h-4" />
+              </button>
+              
+              <AnimatePresence>
+                {isSearchExpanded && (
+                  <motion.div
+                    initial={{ opacity: 0, x: 10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 10 }}
+                    className="flex items-center flex-1 pr-2"
+                  >
+                    <input
+                      ref={searchInputRef}
+                      type="text"
+                      placeholder="Buscar..."
+                      value={busca}
+                      onChange={handleBuscaChange}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          searchInputRef.current?.blur()
+                        }
+                      }}
+                      className="w-full bg-transparent border-none outline-none text-[13px] font-medium text-zinc-900 placeholder:text-zinc-400"
+                    />
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setBusca('')
+                        setIsSearchExpanded(false)
+                      }}
+                      className="flex items-center justify-center w-5 h-5 rounded-full bg-zinc-200 text-zinc-500"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </motion.div>
                 )}
-              </div>
-            </div>
-          </div>
-        )}
+              </AnimatePresence>
+            </motion.div>
 
-        <div className="relative">
-          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" strokeWidth={1.5} />
-          <Input 
-            placeholder="Buscar chipa, bebida..." 
-            className="h-11 rounded-2xl border-none shadow-[0_1px_2px_rgba(0,0,0,0.05),0_8px_16px_-4px_rgba(0,0,0,0.02)] ring-1 ring-zinc-950/[0.04] bg-white pl-10 text-[13px] font-medium transition-all duration-200 focus-visible:ring-2 focus-visible:ring-orange-500/30" 
-            value={busca}
-            onChange={handleBuscaChange}
-          />
+            <button 
+              type="button"
+              onClick={() => onOpenChange(false)}
+              className="flex md:hidden items-center justify-center w-8 h-8 rounded-full bg-zinc-100 text-zinc-500"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
-        {/* Filtro de Categorias */}
-        <div className="relative">
-          <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar snap-x scroll-smooth px-1"
-               style={{ maskImage: 'linear-gradient(to right, transparent, black 5%, black 90%, transparent)' }}>
+        {/* Segmented Control - Ocultar em modo busca no mobile para ganhar espaço */}
+        <AnimatePresence>
+          {(!isSearchExpanded || isDesktop) && (
+            <motion.div 
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="relative flex p-1 bg-zinc-100 rounded-2xl w-full border border-zinc-950/[0.06]">
+                {['LOCAL', 'VIAGEM'].map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => setTipo(option as 'LOCAL' | 'VIAGEM')}
+                    className={cn(
+                      "relative z-10 w-1/2 py-2.5 text-[13px] font-semibold tracking-tight rounded-xl transition-colors duration-200",
+                      tipo === option ? "text-zinc-900" : "text-zinc-500"
+                    )}
+                  >
+                    {option === 'LOCAL' ? 'Consumo Local' : 'Viagem'}
+                    {tipo === option && (
+                      <motion.div
+                        layoutId="active-pill"
+                        className="absolute inset-0 bg-white rounded-xl shadow-sm border border-zinc-950/[0.03]"
+                        transition={{ type: "spring", bounce: 0.15, duration: 0.4 }}
+                        style={{ zIndex: -1 }}
+                      />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Seleção de Mesa e Categorias */}
+        <div className="space-y-4">
+          <AnimatePresence>
+            {tipo === 'LOCAL' && (!isSearchExpanded || isDesktop) && (
+              <motion.div 
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="overflow-hidden space-y-3"
+              >
+                <div className="flex items-center justify-between px-1">
+                  <label className="text-[11px] font-black text-zinc-400 uppercase tracking-widest">Mesa</label>
+                </div>
+                <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                  {loadingMesas ? (
+                    Array.from({ length: 5 }).map((_, idx) => (
+                      <div key={idx} className="w-14 h-14 rounded-2xl bg-zinc-100 shimmer shrink-0" />
+                    ))
+                  ) : (
+                    mesas.map((mesa) => {
+                      const isOccupied = mesa.pedidos.length > 0
+                      const isSelected = mesaId === mesa.id
+
+                      return (
+                        <button
+                          key={mesa.id}
+                          type="button"
+                          onClick={() => !isOccupied && setMesaId(mesa.id)}
+                          className={cn(
+                            "relative flex-shrink-0 w-14 h-14 rounded-2xl border-2 transition-all duration-200 flex flex-col items-center justify-center gap-0.5",
+                            isSelected
+                              ? "bg-zinc-900 border-zinc-900 text-white shadow-lg scale-105"
+                              : isOccupied
+                                ? "bg-zinc-100 border-zinc-100 text-zinc-400 cursor-not-allowed opacity-60"
+                                : "bg-white border-zinc-100 text-zinc-600 hover:border-zinc-300"
+                          )}
+                        >
+                          <span className="text-[9px] font-bold uppercase tracking-tighter leading-none">Mesa</span>
+                          <span className="text-lg font-black tabular-nums leading-none">{mesa.numero}</span>
+                        </button>
+                      )
+                    })
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Filtro de Categorias */}
+          <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
             <button
               type="button"
               onClick={() => setCategoriaAtiva('all')}
               className={cn(
-                "flex-shrink-0 px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all duration-200 snap-start border",
+                "flex-shrink-0 px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest border transition-all",
                 categoriaAtiva === 'all'
-                  ? "bg-zinc-900 border-zinc-900 text-white shadow-md scale-105"
-                  : "bg-white border-zinc-100 text-zinc-500 hover:border-zinc-300"
+                  ? "bg-zinc-900 border-zinc-900 text-white"
+                  : "bg-white border-zinc-100 text-zinc-500"
               )}
             >
               Todos
@@ -319,10 +392,10 @@ export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoMo
                 type="button"
                 onClick={() => setCategoriaAtiva(cat.id)}
                 className={cn(
-                  "flex-shrink-0 px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all duration-200 snap-start border",
+                  "flex-shrink-0 px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest border transition-all",
                   categoriaAtiva === cat.id
-                    ? "bg-zinc-900 border-zinc-900 text-white shadow-md scale-105"
-                    : "bg-white border-zinc-100 text-zinc-500 hover:border-zinc-300"
+                    ? "bg-zinc-900 border-zinc-900 text-white"
+                    : "bg-white border-zinc-100 text-zinc-500"
                 )}
               >
                 {cat.nome}
@@ -335,127 +408,106 @@ export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoMo
       {/* Grid de Produtos */}
       <div 
         ref={scrollContainerRef}
-        className="relative z-10 flex-1 overflow-y-auto px-6 py-8 pb-32 bg-[#FAFAFA] no-scrollbar"
+        className="relative z-10 flex-1 overflow-y-auto px-6 py-8 pb-10 bg-[#FAFAFA] no-scrollbar"
       >
-        {produtos.length === 0 ? (
-           <div className="space-y-4">
-             {Array.from({ length: 4 }).map((_, idx) => (
-               <div key={idx} className="rounded-[20px] bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_8px_16px_-4px_rgba(0,0,0,0.02)] ring-1 ring-zinc-950/[0.03]">
-                 <div className="flex gap-4">
-                   <div className="h-20 w-20 rounded-[14px] shimmer" />
-                   <div className="flex-1 space-y-3 py-2">
-                     <div className="h-4 w-3/4 rounded-full shimmer" />
-                     <div className="h-3 w-1/2 rounded-full shimmer" />
-                   </div>
-                 </div>
-               </div>
-             ))}
-           </div>
-        ) : produtosFiltrados.length === 0 ? (
-          <div className="rounded-[24px] bg-white px-8 py-12 text-center shadow-[0_1px_2px_rgba(0,0,0,0.05),0_8px_16px_-4px_rgba(0,0,0,0.02)] ring-1 ring-zinc-950/[0.04]">
-            <Package className="mx-auto mb-4 h-10 w-10 text-zinc-300" strokeWidth={1.5} />
-            <p className="text-[13px] font-medium leading-[1.2] tracking-tight text-zinc-500">
-              Nenhum produto encontrado.
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-4">
-            {produtosFiltrados.map((prod) => {
-              const carrinhoItem = carrinho.find(c => c.produtoId === prod.id)
-              const semEstoque = prod.qtdVisor <= 0
+        <div className="grid grid-cols-1 gap-4">
+          {produtosFiltrados.map((prod) => {
+            const carrinhoItem = carrinho.find(c => c.produtoId === prod.id)
+            const semEstoque = prod.qtdVisor <= 0
+            const isTopSeller = top2Ids.has(prod.id)
 
-              return (
-                <div 
-                  key={prod.id} 
-                  className={cn(
-                    "flex gap-4 rounded-[20px] p-4 ring-1 transition-all duration-300 active:scale-[0.98]",
-                    semEstoque
-                      ? 'bg-zinc-100 ring-zinc-950/[0.03] opacity-60'
-                      : 'bg-white ring-zinc-950/[0.04] shadow-[0_1px_2px_rgba(0,0,0,0.05),0_8px_16px_-4px_rgba(0,0,0,0.02)]'
-                  )}
-                >
-                  <div className="relative aspect-square w-20 shrink-0 overflow-hidden rounded-[14px] bg-zinc-100/50 ring-1 ring-zinc-950/[0.04]">
-                    {prod.imagemUrl ? (
-                      <img src={prod.imagemUrl} alt={prod.nome} className="h-full w-full object-cover" />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center text-zinc-300">
-                        <Package className="h-8 w-8" strokeWidth={1} />
-                      </div>
-                    )}
+            return (
+              <div 
+                key={prod.id} 
+                className={cn(
+                  "group relative flex gap-4 rounded-[20px] p-4 ring-1 transition-all duration-300",
+                  semEstoque
+                    ? 'bg-zinc-100 ring-zinc-950/[0.03] opacity-60'
+                    : 'bg-white ring-zinc-950/[0.06] shadow-sm hover:shadow-md'
+                )}
+              >
+                {/* Badge de Top Seller */}
+                {isTopSeller && !semEstoque && (
+                  <div className="absolute -top-1.5 -left-1.5 z-10 flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500 text-white text-[9px] font-black uppercase tracking-widest shadow-sm">
+                    <Flame className="w-2.5 h-2.5 fill-current" />
+                    Pop
                   </div>
-                  
-                  <div className="flex min-w-0 flex-1 flex-col justify-between py-1">
-                    <div>
-                      <div className="flex items-start justify-between gap-2">
-                        <h4 className="truncate text-[14px] font-semibold leading-[1.2] tracking-tight text-zinc-900">{prod.nome}</h4>
-                        {semEstoque && (
-                          <span className="shrink-0 rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-rose-700 ring-1 ring-rose-100">
-                            Falta
-                          </span>
-                        )}
-                      </div>
-                      <p className="font-mono text-[13px] mt-1 font-medium tabular-nums tracking-tighter text-zinc-500">{formatMoney(prod.preco)}</p>
-                    </div>
+                )}
 
-                    {!semEstoque ? (
-                      <div className="mt-3 flex items-center justify-end gap-3">
-                        {carrinhoItem && carrinhoItem.quantidade > 0 ? (
-                          <>
-                            <button 
-                              type="button"
-                              className="relative flex items-center justify-center h-8 w-8 rounded-full bg-zinc-100 text-zinc-600 transition-colors hover:bg-zinc-200 active:bg-zinc-300 hitbox-48"
-                              onClick={() => handleDecreaseFromCart(prod.id)}
-                            >
-                              <Minus className="h-3.5 w-3.5" strokeWidth={2} />
-                            </button>
-                            <span className="min-w-[1.5rem] text-center font-mono text-[15px] font-bold tabular-nums tracking-tighter text-zinc-900">
-                              {carrinhoItem.quantidade}
-                            </span>
-                            <button 
-                              type="button"
-                              className="relative flex items-center justify-center h-8 w-8 rounded-full bg-orange-100 text-orange-600 transition-colors hover:bg-orange-200 active:bg-orange-300 hitbox-48"
-                              onClick={() => handleAddToCart(prod)}
-                            >
-                              <Plus className="h-3.5 w-3.5" strokeWidth={2} />
-                            </button>
-                          </>
-                        ) : (
+                <div className="relative aspect-square w-20 shrink-0 overflow-hidden rounded-[14px] bg-zinc-100/50 ring-1 ring-zinc-950/[0.04]">
+                  {prod.imagemUrl && <img src={prod.imagemUrl} alt={prod.nome} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />}
+                </div>
+                
+                <div className="flex min-w-0 flex-1 flex-col justify-between py-1">
+                  <div>
+                    <div className="flex items-start justify-between gap-2">
+                      <h4 className="truncate text-[14px] font-semibold leading-[1.2] tracking-tight text-zinc-900">{prod.nome}</h4>
+                      {semEstoque && (
+                        <span className="shrink-0 rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-rose-700">Falta</span>
+                      )}
+                    </div>
+                    <p className="font-mono text-[13px] mt-1 font-medium tabular-nums text-zinc-500">{formatMoney(prod.preco)}</p>
+                  </div>
+
+                  {!semEstoque && (
+                    <div className="mt-3 flex items-center justify-end gap-3">
+                      {carrinhoItem ? (
+                        <>
                           <button 
-                            type="button"
-                            className="relative flex items-center justify-center gap-1.5 h-8 px-4 rounded-full bg-zinc-900 text-[11px] font-semibold text-white transition-all active:scale-[0.95] hitbox-48 hover:bg-zinc-800"
+                            className="h-8 w-8 rounded-full bg-zinc-100 text-zinc-600 flex items-center justify-center hover:bg-zinc-200 transition-colors"
+                            onClick={() => handleDecreaseFromCart(prod.id)}
+                          >
+                            <Minus className="h-3.5 w-3.5" />
+                          </button>
+                          <span className="min-w-[1.5rem] text-center font-mono text-[15px] font-bold tabular-nums text-zinc-900">
+                            {carrinhoItem.quantidade}
+                          </span>
+                          <button 
+                            className="h-8 w-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center hover:bg-orange-200 transition-colors"
                             onClick={() => handleAddToCart(prod)}
                           >
-                            <Plus className="h-3 w-3" strokeWidth={2} /> ADD
+                            <Plus className="h-3.5 w-3.5" />
                           </button>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="mt-3 flex justify-end">
-                        <span className="text-[11px] font-medium text-zinc-400">Indisponível</span>
-                      </div>
-                    )}
-                  </div>
+                        </>
+                      ) : (
+                        <button 
+                          className="h-8 px-4 rounded-full bg-zinc-900 text-[11px] font-semibold text-white hover:bg-zinc-800 transition-all active:scale-95"
+                          onClick={() => handleAddToCart(prod)}
+                        >
+                          ADD
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
-              )
-            })}
-          </div>
-        )}
-
-        {/* Observações */}
-        <div className="mt-8 space-y-3">
-          <label className="text-[12px] font-semibold uppercase tracking-widest text-zinc-500">Observações adicionais</label>
-          <Textarea 
-            placeholder="Ex: Assar bem, separados..." 
-            value={observacao}
-            onChange={e => setObservacao(e.target.value)}
-            className="min-h-[80px] resize-none rounded-xl border-none shadow-[0_1px_2px_rgba(0,0,0,0.05),0_8px_16px_-4px_rgba(0,0,0,0.02)] bg-white text-[13px] ring-1 ring-zinc-950/[0.04] transition-all focus-visible:ring-2 focus-visible:ring-orange-500/30 no-scrollbar"
-          />
+              </div>
+            )
+          })}
         </div>
+
+        <AnimatePresence>
+          {(!isSearchExpanded || isDesktop) && (
+            <motion.div 
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="mt-8 space-y-3 overflow-hidden"
+            >
+              <label className="text-[12px] font-semibold uppercase tracking-widest text-zinc-500">Observações</label>
+              <Textarea 
+                placeholder="Ex: Assar bem, separados..." 
+                value={observacao}
+                onChange={e => setObservacao(e.target.value)}
+                className="min-h-[80px] rounded-xl border-none shadow-sm bg-white text-[13px] ring-1 ring-zinc-950/[0.04]"
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      {/* Footer Carrinho Fixo */}
+      {/* Footer Carrinho */}
       {carrinho.length > 0 && (
-        <div className="absolute bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-xl border-t border-zinc-950/[0.04] shadow-[0_-12px_24px_-8px_rgba(0,0,0,0.06)] z-20 md:rounded-b-[24px]">
+        <div className="p-4 bg-white/95 backdrop-blur-xl border-t border-zinc-950/[0.04] shadow-lg z-20 md:rounded-b-[24px] shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex flex-col">
               <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-400">Total</span>
@@ -465,8 +517,7 @@ export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoMo
             </div>
             
             <button 
-              type="button"
-              className="h-12 px-8 rounded-xl bg-gradient-to-r from-[#F29100] via-[#E24A07] to-[#B91C1C] flex items-center justify-center text-[13px] font-black uppercase tracking-widest text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_8px_16px_rgba(226,74,7,0.2)] transition-all active:scale-[0.98] disabled:opacity-50"
+              className="h-12 px-8 rounded-xl bg-gradient-to-r from-[#F29100] via-[#E24A07] to-[#B91C1C] text-white text-[13px] font-black uppercase tracking-widest shadow-md"
               onClick={handleSavePedido}
               disabled={isSubmitting}
             >
@@ -475,13 +526,13 @@ export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoMo
           </div>
         </div>
       )}
-    </>
+    </div>
   )
 
   if (isDesktop) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-xl w-full h-[85vh] p-0 flex flex-col overflow-hidden border-none shadow-[0_24px_48px_-12px_rgba(0,0,0,0.2)] sm:rounded-[24px] no-scrollbar">
+        <DialogContent className="max-w-xl p-0 h-[80vh] overflow-hidden rounded-2xl border-none shadow-2xl">
           {renderContent}
         </DialogContent>
       </Dialog>
@@ -489,15 +540,14 @@ export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoMo
   }
 
   return (
-    <Drawer.Root open={open} onOpenChange={onOpenChange}>
+    <Drawer.Root open={open} onOpenChange={onOpenChange} shouldScaleBackground>
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 bg-black/40 z-50 backdrop-blur-sm" />
-        <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 flex flex-col h-[94vh] rounded-t-[20px] bg-white overflow-hidden shadow-[0_-24px_48px_-12px_rgba(0,0,0,0.15)] focus:outline-none no-scrollbar">
-          <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-zinc-300 mt-4 mb-2" />
+        <Drawer.Content className="fixed bottom-0 left-0 right-0 h-[96dvh] bg-white rounded-t-2xl z-50 overflow-hidden flex flex-col focus:outline-none">
+          <div className="w-12 h-1.5 bg-zinc-300 rounded-full mx-auto my-4 shrink-0" />
           {renderContent}
         </Drawer.Content>
       </Drawer.Portal>
     </Drawer.Root>
   )
 }
-

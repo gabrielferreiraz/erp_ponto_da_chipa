@@ -17,7 +17,12 @@ export class ProdutoRepository {
 
     const produtos = await prisma.produto.findMany({
       where,
-      include: { categoria: true },
+      include: { 
+        categoria: true,
+        _count: {
+          select: { itensPedido: true }
+        }
+      },
       orderBy: { criadoEm: 'desc' },
     })
 
@@ -26,6 +31,7 @@ export class ProdutoRepository {
       ...p,
       preco: Number(p.preco),
       precoAnterior: p.precoAnterior ? Number(p.precoAnterior) : null,
+      sales_count: p._count.itensPedido,
     }))
   }
 

@@ -43,7 +43,7 @@ export const authConfig: NextAuthConfig = {
           senha: true,
           role: true,
           ativo: true,
-          emailVerificado: true,
+          emailVerified: true,
           sessionVersion: true,
         },
       })
@@ -77,7 +77,7 @@ export const authConfig: NextAuthConfig = {
           nome: usuario.nome,
           email: usuario.email,
           role: usuario.role,
-          sessionVersion: usuario.sessionVersion,
+          sessionVersion: (usuario as any).sessionVersion,
         }
       },
     }),

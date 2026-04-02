@@ -8,6 +8,7 @@ export type ProdutoWithCategoria = Prisma.ProdutoGetPayload<{
 export type ProdutoFrontend = Omit<ProdutoWithCategoria, 'preco' | 'precoAnterior'> & {
   preco: number
   precoAnterior: number | null
+  sales_count: number
 }
 
 export interface ProdutoFilters {
