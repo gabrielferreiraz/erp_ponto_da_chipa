@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Clock, MapPin, Package, ShoppingBag, Banknote, Loader2, UserCircle, ChefHat } from 'lucide-react'
+import { Plus, Clock, MapPin, ShoppingBag, Banknote, Loader2, ChefHat, AlertTriangle } from 'lucide-react'
 import { PedidoModalMobile } from '@/components/pedidos/pedido-modal-mobile'
 import { usePedidosAtendente, PedidoFrontend } from '@/hooks/use-pedidos-atendente'
 import { useFilaCaixa, FilaPedidoFrontend } from '@/hooks/use-fila-caixa'
@@ -11,6 +11,8 @@ import { formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 
 export default function PedidosAtendentePage() {
   const [modalOpen, setModalOpen] = useState(false)
@@ -38,6 +40,7 @@ export default function PedidosAtendentePage() {
   }, [pedidosCaixa])
 
   const [confirmingId, setConfirmingId] = useState<string | null>(null)
+  const [pedidoConfirmar, setPedidoConfirmar] = useState<PedidoFrontend | null>(null)
   const [pagarPedido, setPagarPedido] = useState<FilaPedidoFrontend | null>(null)
 
   const handleEdit = (pedido: PedidoFrontend) => {
@@ -49,22 +52,24 @@ export default function PedidosAtendentePage() {
     setModalOpen(true)
   }
 
-  const handleConfirmOrder = async (id: string, e: React.MouseEvent) => {
+  const handleConfirmOrder = async (pedido: PedidoFrontend, e: React.MouseEvent) => {
     e.stopPropagation()
-    
-    if (!window.confirm('Enviar este pedido para o caixa?')) {
-      return
-    }
+    setPedidoConfirmar(pedido)
+  }
+
+  const executeConfirmOrder = async () => {
+    if (!pedidoConfirmar) return
 
     try {
-      setConfirmingId(id)
-      const res = await fetch(`/api/pedidos/${id}/confirmar`, { method: 'PATCH' })
+      setConfirmingId(pedidoConfirmar.id)
+      const res = await fetch(`/api/pedidos/${pedidoConfirmar.id}/confirmar`, { method: 'PATCH' })
       if (!res.ok) {
         const error = await res.json()
         throw new Error(error.error || 'Erro ao confirmar pedido')
       }
       toast.success('Pedido enviado para o Caixa!')
       mutatePedidos()
+      setPedidoConfirmar(null)
     } catch (err: any) {
       toast.error(err.message)
     } finally {
@@ -214,7 +219,7 @@ export default function PedidosAtendentePage() {
                           {formatMoney(pedido.totalBruto)}
                         </span>
                         <button 
-                          onClick={(e) => handleConfirmOrder(pedido.id, e)}
+                          onClick={(e) => handleConfirmOrder(pedido, e)}
                           disabled={confirmingId === pedido.id}
                           className="h-12 px-8 rounded-2xl bg-zinc-900 text-white font-black text-[11px] uppercase tracking-widest transition-all duration-300 hover:bg-[#B91C1C] active:scale-[0.96] disabled:opacity-50 min-w-[120px]"
                         >
@@ -227,103 +232,99 @@ export default function PedidosAtendentePage() {
               )}
             </motion.section>
           ) : (
-            <motion.section 
+            <motion.section
               key="caixa"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
-              className="space-y-6"
+              className="space-y-3 pb-32"
             >
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pb-12 no-scrollbar">
-                {loadingCaixa && filaParaExibir.length === 0 ? (
-                  [1, 2, 3].map(i => (
-                    <div key={i} className="h-48 bg-white border border-zinc-200/50 rounded-3xl animate-pulse shadow-sm" />
-                  ))
-                ) : filaParaExibir.length === 0 ? (
-                  <div className="col-span-full flex flex-col items-center justify-center bg-white border border-dashed border-zinc-200 rounded-3xl p-16 text-center space-y-4">
-                    <div className="bg-zinc-50 p-6 rounded-full border border-zinc-100">
-                      <Banknote className="w-10 h-10 text-zinc-200" strokeWidth={1} />
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest">Caixa Limpo</p>
-                      <p className="font-sans text-xl font-semibold text-zinc-600 tracking-tight">Nenhum pedido aguardando pagamento.</p>
-                    </div>
+              {loadingCaixa && filaParaExibir.length === 0 ? (
+                [1, 2, 3].map(i => (
+                  <div key={i} className="h-[180px] bg-white border border-zinc-200/50 rounded-3xl animate-pulse shadow-sm" />
+                ))
+              ) : filaParaExibir.length === 0 ? (
+                <div className="flex flex-col items-center justify-center bg-white border border-dashed border-zinc-200 rounded-3xl p-16 text-center space-y-4">
+                  <div className="bg-zinc-50 p-6 rounded-full border border-zinc-100">
+                    <Banknote className="w-10 h-10 text-zinc-200" strokeWidth={1} />
                   </div>
-                ) : (
-                  filaParaExibir.map(pedido => (
-                    <div 
-                      key={pedido.id} 
-                      className="group relative bg-white ring-1 ring-zinc-950/[0.04] rounded-[28px] p-5 shadow-sm border-l-[6px] border-l-orange-500/80 flex flex-col justify-between gap-5 transition-all duration-300"
-                    >
-                      <div className="flex justify-between items-center bg-zinc-50/50 p-3 -m-2 mb-0 rounded-2xl">
-                        <div className="flex flex-col">
-                          <span className="text-[9px] font-black text-zinc-400 uppercase tracking-[0.2em] leading-none mb-1">Pedido</span>
-                          <span className="font-mono text-sm font-black text-zinc-800 tracking-tight tabular-nums uppercase">
-                            #{pedido.codigo}
-                          </span>
+                  <div className="space-y-1">
+                    <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest">Caixa Limpo</p>
+                    <p className="font-sans text-xl font-semibold text-zinc-600 tracking-tight">Nenhum pedido aguardando pagamento.</p>
+                  </div>
+                </div>
+              ) : (
+                filaParaExibir.map(pedido => (
+                  <div
+                    key={pedido.id}
+                    className="bg-white rounded-[24px] shadow-sm ring-1 ring-zinc-950/[0.05] overflow-hidden"
+                  >
+                    {/* Topo: código + timer */}
+                    <div className="flex items-center justify-between px-5 pt-5 pb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-2xl bg-orange-500 flex items-center justify-center shrink-0">
+                          <Banknote className="w-5 h-5 text-white" strokeWidth={2} />
                         </div>
-                        <div className="flex flex-col items-end">
-                          <span className="text-[9px] font-black text-zinc-400 uppercase tracking-[0.2em] leading-none mb-1 text-right">Espera</span>
-                          <div className="flex items-center gap-1.5 bg-white px-2 py-0.5 rounded-lg shadow-sm ring-1 ring-zinc-100">
-                            <Clock className={cn("w-3 h-3", getTimerColor(pedido.criadoEm))} strokeWidth={2.5} />
-                            <span className={cn("text-[10px] font-black tracking-tight tabular-nums", getTimerColor(pedido.criadoEm))}>
-                              {formatDistanceToNow(new Date(pedido.criadoEm), { addSuffix: false, locale: ptBR }).replace('cerca de ', '')}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-3 px-1">
-                        <div className="w-9 h-9 flex items-center justify-center bg-zinc-50 rounded-xl border border-zinc-100">
-                          <UserCircle className="w-5 h-5 text-zinc-400" strokeWidth={1.5} />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest leading-none mb-1">Responsável</p>
-                          <p className="text-[13px] font-bold text-zinc-700 tracking-tight truncate">{pedido.atendente.nome.split(' ')[0]}</p>
+                        <div>
+                          <p className="font-mono text-lg font-black text-zinc-900 tracking-tight leading-none">
+                            {pedido.codigo}
+                          </p>
+                          <p className="text-[11px] text-zinc-400 font-medium mt-0.5 truncate max-w-[120px]">
+                            {pedido.mesa ? `Mesa ${pedido.mesa.numero}` : 'Balcão'} · {pedido.atendente.nome.split(' ')[0]}
+                          </p>
                         </div>
                       </div>
 
-                      <div className="px-1 space-y-2 border-t border-zinc-100/80 pt-4 max-h-[140px] overflow-y-auto no-scrollbar">
-                        <p className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-400/80 mb-2 flex items-center gap-2">
-                          <Package className="w-3 h-3" /> Itens do Pedido
-                        </p>
+                      <div className={cn(
+                        "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-black tabular-nums",
+                        getTimerColor(pedido.criadoEm) === 'text-[#B91C1C]'
+                          ? "bg-red-50 text-[#B91C1C]"
+                          : getTimerColor(pedido.criadoEm) === 'text-orange-600'
+                            ? "bg-orange-50 text-orange-600"
+                            : "bg-emerald-50 text-emerald-600"
+                      )}>
+                        <Clock className="w-3.5 h-3.5" strokeWidth={2.5} />
+                        {formatDistanceToNow(new Date(pedido.criadoEm), { addSuffix: false, locale: ptBR }).replace('cerca de ', '')}
+                      </div>
+                    </div>
+
+                    {/* Itens */}
+                    <div className="px-5 pb-4 space-y-2 border-t border-zinc-100">
+                      <div className="pt-3 space-y-2 max-h-[132px] overflow-y-auto no-scrollbar">
                         {pedido.itens.map(item => (
-                          <div key={item.id} className="flex items-start justify-between text-[12px] py-0.5">
-                            <div className="flex items-start gap-2.5 min-w-0">
-                              <span className="flex-shrink-0 bg-zinc-100 text-zinc-600 font-mono text-[10px] font-black px-1.5 py-0.5 rounded-md tabular-nums tracking-tighter ring-1 ring-zinc-200/50">
-                                {item.quantidade}x
+                          <div key={item.id} className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <span className="shrink-0 w-7 h-7 flex items-center justify-center bg-zinc-100 rounded-lg font-mono text-[11px] font-black text-zinc-600 tabular-nums">
+                                {item.quantidade}
                               </span>
-                              <span className="font-semibold text-zinc-600 tracking-tight truncate mt-0.5">
+                              <span className="text-[13px] font-semibold text-zinc-700 truncate leading-tight">
                                 {item.nomeSnapshot}
                               </span>
                             </div>
-                            <span className="flex-shrink-0 font-mono text-[11px] font-bold text-zinc-400 tabular-nums tracking-tighter mt-0.5 ml-2">
+                            <span className="shrink-0 font-mono text-[12px] font-bold text-zinc-400 tabular-nums">
                               {formatMoney(Number(item.precoSnapshot) * item.quantidade)}
                             </span>
                           </div>
                         ))}
                       </div>
-
-                      <div className="flex items-center justify-between pt-4 border-t border-zinc-100/80 mt-1">
-                        <div className="flex flex-col">
-                          <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest leading-none mb-1.5">Total Final</span>
-                          <span className="font-mono text-xl font-black text-zinc-900 tracking-tighter tabular-nums bg-zinc-50 px-3 py-1 rounded-xl border border-zinc-100">
-                            {formatMoney(pedido.totalFinal)}
-                          </span>
-                        </div>
-                        <button 
-                          onClick={() => setPagarPedido(pedido)}
-                          className="h-11 px-5 rounded-2xl bg-emerald-600 text-white font-black text-[10px] uppercase tracking-[0.2em] shadow-sm flex items-center gap-2 transition-all hover:bg-emerald-500 active:scale-95"
-                        >
-                          <Banknote className="w-4 h-4" strokeWidth={2.5} /> 
-                          <span>RECEBER</span>
-                        </button>
-                      </div>
                     </div>
-                  ))
-                )}
-              </div>
+
+                    {/* Rodapé: total + botão */}
+                    <div className="px-4 pb-4">
+                      <button
+                        onClick={() => setPagarPedido(pedido)}
+                        className="w-full h-14 rounded-2xl bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white flex items-center justify-between px-5 transition-all shadow-sm"
+                      >
+                        <span className="text-[11px] font-black uppercase tracking-widest opacity-80">Receber</span>
+                        <span className="font-mono text-xl font-black tabular-nums tracking-tighter">
+                          {formatMoney(pedido.totalFinal)}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
             </motion.section>
           )}
         </AnimatePresence>
@@ -354,6 +355,45 @@ export default function PedidosAtendentePage() {
         pedido={pagarPedido} 
         onClose={() => setPagarPedido(null)} 
       />
+
+      {/* Modal de Confirmação de Fechamento */}
+      <Dialog open={!!pedidoConfirmar} onOpenChange={(open) => !open && setPedidoConfirmar(null)}>
+        <DialogContent className="sm:max-w-[400px] p-0 overflow-hidden border-none rounded-[32px] shadow-2xl">
+          <div className="relative p-8 space-y-6">
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="w-16 h-16 rounded-3xl bg-orange-50 flex items-center justify-center ring-1 ring-orange-100 shadow-sm">
+                <AlertTriangle className="w-8 h-8 text-orange-600" strokeWidth={1.5} />
+              </div>
+              
+              <div className="space-y-2">
+                <DialogTitle className="text-2xl font-bold tracking-tight text-zinc-900">
+                  Fechar Pedido?
+                </DialogTitle>
+                <DialogDescription className="text-zinc-500 text-[15px] leading-relaxed">
+                  O pedido <span className="font-mono font-bold text-zinc-900">{pedidoConfirmar?.codigo}</span> será enviado para o caixa para pagamento. Esta ação não pode ser desfeita.
+                </DialogDescription>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3 pt-2">
+              <Button 
+                onClick={executeConfirmOrder}
+                disabled={confirmingId !== null}
+                className="h-14 w-full rounded-2xl bg-zinc-900 hover:bg-[#B91C1C] text-white font-bold text-sm uppercase tracking-widest transition-all shadow-md active:scale-[0.98]"
+              >
+                {confirmingId ? <Loader2 className="w-5 h-5 animate-spin" /> : 'SIM, ENVIAR AO CAIXA'}
+              </Button>
+              <Button 
+                variant="ghost"
+                onClick={() => setPedidoConfirmar(null)}
+                className="h-12 w-full rounded-2xl text-zinc-400 font-bold text-[11px] uppercase tracking-widest hover:text-zinc-900 hover:bg-zinc-50"
+              >
+                CANCELAR
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

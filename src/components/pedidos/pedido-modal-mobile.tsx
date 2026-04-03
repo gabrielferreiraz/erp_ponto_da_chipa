@@ -55,12 +55,12 @@ export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoMo
     }
   }, [isSearchExpanded])
 
-  // Efeito para subir o scroll apenas quando a busca ou categoria mudar
+  // Efeito para subir o scroll apenas quando a busca mudar, mas com proteção para não subir o modal inteiro
   useEffect(() => {
-    if (scrollContainerRef.current) {
+    if (busca && scrollContainerRef.current) {
       scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' })
     }
-  }, [busca, categoriaAtiva])
+  }, [busca])
 
   const handleBuscaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setBusca(e.target.value)
@@ -540,10 +540,18 @@ export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoMo
   }
 
   return (
-    <Drawer.Root open={open} onOpenChange={onOpenChange} shouldScaleBackground>
+    <Drawer.Root 
+      open={open} 
+      onOpenChange={onOpenChange} 
+      shouldScaleBackground
+      disablePreventScroll={false} // Mantém o scroll do body bloqueado
+    >
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 bg-black/40 z-50 backdrop-blur-sm" />
-        <Drawer.Content className="fixed bottom-0 left-0 right-0 h-[96dvh] bg-white rounded-t-2xl z-50 overflow-hidden flex flex-col focus:outline-none">
+        <Drawer.Content 
+          className="fixed bottom-0 left-0 right-0 h-[96dvh] bg-white rounded-t-2xl z-50 overflow-hidden flex flex-col focus:outline-none"
+          onOpenAutoFocus={(e) => e.preventDefault()} // Evita pular o scroll ao focar
+        >
           <div className="w-12 h-1.5 bg-zinc-300 rounded-full mx-auto my-4 shrink-0" />
           {renderContent}
         </Drawer.Content>
