@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus, Clock, MapPin, Package, ShoppingBag, Banknote, Loader2, UserCircle, ChefHat } from 'lucide-react'
 import { PedidoModalMobile } from '@/components/pedidos/pedido-modal-mobile'
 import { usePedidosAtendente, PedidoFrontend } from '@/hooks/use-pedidos-atendente'
@@ -23,13 +23,19 @@ export default function PedidosAtendentePage() {
   const [pedidosCache, setPedidosCache] = useState<PedidoFrontend[]>([])
   const [filaCache, setFilaCache] = useState<FilaPedidoFrontend[]>([])
 
-  // Atualiza cache apenas quando os dados novos chegam com sucesso
-  if (pedidos && pedidos.length > 0 && JSON.stringify(pedidos) !== JSON.stringify(pedidosCache)) {
-    setPedidosCache(pedidos)
-  }
-  if (pedidosCaixa && pedidosCaixa.length > 0 && JSON.stringify(pedidosCaixa) !== JSON.stringify(filaCache)) {
-    setFilaCache(pedidosCaixa)
-  }
+  // Atualiza cache via useEffect para não causar setState durante render.
+  // Limpa cache quando dados chegam como array vazio (lista finalizada).
+  useEffect(() => {
+    if (pedidos !== undefined) {
+      setPedidosCache(pedidos)
+    }
+  }, [pedidos])
+
+  useEffect(() => {
+    if (pedidosCaixa !== undefined) {
+      setFilaCache(pedidosCaixa)
+    }
+  }, [pedidosCaixa])
 
   const [confirmingId, setConfirmingId] = useState<string | null>(null)
   const [pagarPedido, setPagarPedido] = useState<FilaPedidoFrontend | null>(null)
@@ -76,8 +82,8 @@ export default function PedidosAtendentePage() {
     return 'text-emerald-600' // Recente
   }
 
-  const pedidosParaExibir = pedidosCache.length > 0 ? pedidosCache : (pedidos || [])
-  const filaParaExibir = filaCache.length > 0 ? filaCache : (pedidosCaixa || [])
+  const pedidosParaExibir = loadingPedidos && pedidosCache.length === 0 ? [] : pedidosCache
+  const filaParaExibir = loadingCaixa && filaCache.length === 0 ? [] : filaCache
 
   const pedidosAbertos = pedidosParaExibir.filter(p => p.orderStatus === 'ABERTO')
 

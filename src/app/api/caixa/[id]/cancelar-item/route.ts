@@ -15,19 +15,12 @@ export const PATCH = withSecurity(async (req, session, { params }) => {
 
   const body = await req.json()
   const parsed = cancelarItemSchema.safeParse(body)
-  
+
   if (!parsed.success) {
     return NextResponse.json({ error: 'Dados inválidos', details: parsed.error.flatten() }, { status: 400 })
   }
 
-  // O frontend as vezes manda como 'produtoId' no caso de REMOVER
-  const itemId = parsed.data.itemId || (body as any).produtoId
-
-  if (!itemId) {
-    return NextResponse.json({ error: 'ID do item não informado' }, { status: 400 })
-  }
-
-  const { motivoCancelamento, quantidadeCancelada } = parsed.data
+  const { itemId, motivoCancelamento, quantidadeCancelada } = parsed.data
 
   await caixaService.cancelarItem(itemId, session.user.id, motivoCancelamento, quantidadeCancelada)
 

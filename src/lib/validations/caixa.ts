@@ -6,7 +6,7 @@ export const pagamentoSchema = z.object({
 })
 
 export const cancelarItemSchema = z.object({
-  itemId: z.string().min(1).optional(), // Usado quando enviado no body
+  itemId: z.string().min(1),
   quantidadeCancelada: z.number().int().positive().optional(),
   motivoCancelamento: z.string().min(3, 'O motivo deve ter pelo menos 3 caracteres').max(150, 'Motivo muito longo').optional().default('Ajuste no Caixa'),
 })

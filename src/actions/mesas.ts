@@ -67,14 +67,30 @@ export async function deleteMesaAction(id: string) {
   const session = await auth()
   if (session?.user.role !== 'ADMIN') throw new Error('Não autorizado')
 
-  // Verificar se há pedidos abertos
+  // Bloqueia exclusão se houver qualquer pedido ativo (ABERTO ou AGUARDANDO_COBRANCA)
   const mesa = await prisma.mesa.findUnique({
     where: { id },
-    include: { pedidos: { where: { orderStatus: 'ABERTO' } } }
+    include: {
+      pedidos: {
+        where: { orderStatus: { in: ['ABERTO', 'AGUARDANDO_COBRANCA'] } },
+        select: { id: true }
+      }
+    }
   })
 
   if (mesa?.pedidos.length) {
-    throw new Error('Não é possível excluir uma mesa com pedidos abertos.')
+    throw new Error('Não é possível excluir uma mesa com pedidos em aberto ou aguardando pagamento.')
+  }
+
+  // Verifica se existem pedidos históricos (pagos/cancelados) que referenciam esta mesa
+  const historico = await prisma.pedido.count({
+    where: { mesaId: id }
+  })
+
+  if (historico > 0) {
+    throw new Error(
+      'Esta mesa possui pedidos históricos vinculados. Desative-a em vez de excluir para preservar o histórico.'
+    )
   }
 
   await prisma.mesa.delete({ where: { id } })

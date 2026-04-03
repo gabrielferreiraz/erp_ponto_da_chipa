@@ -42,7 +42,7 @@ export class PedidoService {
     this.checkClosingShift()
     const ids = itensParams.map(i => i.produtoId)
     const produtos = await prisma.produto.findMany({ where: { id: { in: ids } } })
-    
+
     let totalBrutoNum = 0
     const buildedItems: Prisma.ItemPedidoCreateWithoutPedidoInput[] = []
 
@@ -50,13 +50,12 @@ export class PedidoService {
       const p = produtos.find(p => p.id === itemParam.produtoId)
       if (!p) throw new Error(`NOT_FOUND: Produto não localizado (ID: ${itemParam.produtoId})`)
       if (!p.disponivel) throw new Error(`BAD_REQUEST: O produto ${p.nome} não está disponível.`)
-      // Validação sem decrementar qtdVisor
       if (p.qtdVisor < itemParam.quantidade) {
         throw new Error(`BAD_REQUEST: Quantidade insuficiente no visor para o produto ${p.nome}. Solicitado: ${itemParam.quantidade}, Visor: ${p.qtdVisor}`)
       }
 
       totalBrutoNum += Number(p.preco) * itemParam.quantidade
-      
+
       buildedItems.push({
         produto: { connect: { id: p.id } },
         quantidade: itemParam.quantidade,
@@ -66,45 +65,74 @@ export class PedidoService {
       })
     }
 
-    return {
-      buildedItems,
-      totalBrutoNum
-    }
+    return { buildedItems, totalBrutoNum }
   }
 
   async create(data: CreateParams) {
-    const { buildedItems, totalBrutoNum } = await this.checkDisponibilityAndBuildItems(data.itens)
+    this.checkClosingShift()
 
-    // O código do pedido deve ser gerado usando a sequence do PostgreSQL
-    // Usando try-catch pq se a sequence "pedido_seq" não existir eu vou quebrar.
+    // Gera código fora da transação (sequence é safe fora de tx)
     let codigoStr = ''
     try {
       const seq = await prisma.$queryRaw<[{ nextval: bigint }]>`SELECT nextval('pedido_seq')`
-      // Postgres returns BigInt on nextval, ensure it's converted to string correctly
       codigoStr = `PED-${String(seq[0].nextval).padStart(4, '0')}`
     } catch(err) {
       console.error('Erro na Sequence de Pedido', err)
-      // Fallback pra nanoid ou random so o dev server nao crash inteiro se nao tiver a seq.
-      codigoStr = `PED-${Math.floor(1000 + Math.random() * 9000)}` 
+      codigoStr = `PED-${Math.floor(1000 + Math.random() * 9000)}`
     }
 
-    const totalBrutoDec = new Prisma.Decimal(totalBrutoNum)
+    return await prisma.$transaction(async (tx) => {
+      const ids = data.itens.map(i => i.produtoId)
 
-    const baseData: Prisma.PedidoCreateInput = {
-      codigo: codigoStr,
-      tipo: data.tipo,
-      observacao: data.observacao,
-      totalBruto: totalBrutoDec,
-      totalFinal: totalBrutoDec, // Como não criamos regra de desconto ainda
-      atendente: { connect: { id: data.atendenteId } },
-      itens: { create: buildedItems }
-    }
+      // SELECT FOR UPDATE: impede race condition de estoque entre requisições concorrentes
+      const produtosLock = await tx.$queryRaw<{ id: string; nome: string; preco: any; qtdVisor: number; disponivel: boolean }[]>`
+        SELECT id, nome, preco, "qtdVisor", disponivel FROM "produtos" WHERE id IN (${Prisma.join(ids)}) FOR UPDATE
+      `
 
-    if (data.mesaId) {
-      baseData.mesa = { connect: { id: data.mesaId } }
-    }
+      let totalBrutoNum = 0
+      const buildedItems: Prisma.ItemPedidoCreateManyPedidoInput[] = []
 
-    return this.repository.create(baseData)
+      for (const itemParam of data.itens) {
+        const p = produtosLock.find(p => p.id === itemParam.produtoId)
+        if (!p) throw new Error(`NOT_FOUND: Produto não localizado (ID: ${itemParam.produtoId})`)
+        if (!p.disponivel) throw new Error(`BAD_REQUEST: O produto ${p.nome} não está disponível.`)
+        if (Number(p.qtdVisor) < itemParam.quantidade) {
+          throw new Error(`BAD_REQUEST: Quantidade insuficiente no visor para ${p.nome}. Solicitado: ${itemParam.quantidade}, Visor: ${p.qtdVisor}`)
+        }
+        totalBrutoNum += Number(p.preco) * itemParam.quantidade
+        buildedItems.push({
+          produtoId: p.id,
+          quantidade: itemParam.quantidade,
+          nomeSnapshot: p.nome,
+          precoSnapshot: p.preco,
+          status: 'ATIVO'
+        })
+      }
+
+      const totalBrutoDec = new Prisma.Decimal(totalBrutoNum)
+
+      const created = await tx.pedido.create({
+        data: {
+          codigo: codigoStr,
+          tipo: data.tipo,
+          observacao: data.observacao,
+          orderStatus: 'ABERTO',
+          totalBruto: totalBrutoDec,
+          totalFinal: totalBrutoDec,
+          atendente: { connect: { id: data.atendenteId } },
+          ...(data.mesaId ? { mesa: { connect: { id: data.mesaId } } } : {}),
+          itens: { createMany: { data: buildedItems } }
+        },
+        include: { itens: true, mesa: true }
+      })
+
+      return {
+        ...created,
+        totalBruto: created.totalBruto ? Number(created.totalBruto) : 0,
+        totalFinal: created.totalFinal ? Number(created.totalFinal) : 0,
+        itens: created.itens.map(i => ({ ...i, precoSnapshot: Number(i.precoSnapshot) }))
+      }
+    })
   }
 
   async update(data: UpdateParams) {

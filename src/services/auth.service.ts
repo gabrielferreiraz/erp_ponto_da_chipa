@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { TokenService } from './token.service'
 import { SecurityLogger } from '@/lib/security-logger'
+import bcrypt from 'bcryptjs'
 
 export class AuthService {
   private tokenService = new TokenService()
@@ -25,8 +26,13 @@ export class AuthService {
     }
 
     const token = await this.tokenService.generatePasswordResetToken(email)
-    
-    // Em produção aqui enviaria o email. Logamos o evento.
+
+    // TODO: integrar com serviço de email (ex: Resend, SendGrid) para enviar o token.
+    // Em desenvolvimento, loga o token no console para testes.
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[DEV] Password reset token for ${email}: ${token}`)
+    }
+
     SecurityLogger.log({
       event: 'LOGIN_SUCCESS',
       route: '/api/auth/reset-password/request',
@@ -35,8 +41,6 @@ export class AuthService {
       details: 'Token de reset de senha gerado'
     })
 
-    // Para fins de desenvolvimento/teste, poderíamos retornar o token se em ambiente DEV, 
-    // mas em PROD nunca retornamos.
     return { success: true }
   }
 
@@ -62,7 +66,7 @@ export class AuthService {
 
     if (!user) throw new Error('Usuário não encontrado')
 
-    const hashedSenha = await (require('bcryptjs')).hash(novaSenha, 12)
+    const hashedSenha = await bcrypt.hash(novaSenha, 12)
 
     await prisma.usuario.update({
       where: { id: user.id },

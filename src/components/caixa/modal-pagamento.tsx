@@ -64,18 +64,22 @@ export function ModalPagamento({ pedido: stalePedido, onClose }: ModalPagamentoP
     }
   }
 
-  const handleUpdateItem = async (produtoId: string, acao: 'ADICIONAR' | 'REMOVER') => {
+  const handleUpdateItem = async (id: string, acao: 'ADICIONAR' | 'REMOVER') => {
     if (!pedido) return
     try {
-      setIsProcessingItem(produtoId)
-      const endpoint = acao === 'ADICIONAR' 
-        ? `/api/caixa/${pedido.id}/adicionar-item` 
+      setIsProcessingItem(id)
+      const endpoint = acao === 'ADICIONAR'
+        ? `/api/caixa/${pedido.id}/adicionar-item`
         : `/api/caixa/${pedido.id}/cancelar-item`
 
       const res = await fetch(endpoint, {
         method: acao === 'ADICIONAR' ? 'POST' : 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(acao === 'ADICIONAR' ? { produtoId, quantidade: 1 } : { produtoId, quantidadeCancelada: 1 })
+        body: JSON.stringify(
+          acao === 'ADICIONAR'
+            ? { produtoId: id, quantidade: 1 }
+            : { itemId: id, quantidadeCancelada: 1 }
+        )
       })
 
       if (!res.ok) throw new Error('Erro ao atualizar item')

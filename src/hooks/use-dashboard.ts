@@ -9,19 +9,19 @@ export function useDashboard() {
   const [periodo, setPeriodo] = useState<PeriodoDashboard>('hoje')
 
   const { data: resumo, isLoading: loadingResumo } = useSWR(
-    `/api/dashboard/resumo?periodo=${periodo}`,
+    `/api/dashboard/kpis?periodo=${periodo}`,
     fetcher,
     { refreshInterval: 300000 } // 5 minutos
   )
 
   const { data: ranking, isLoading: loadingRanking } = useSWR(
-    `/api/dashboard/ranking-produtos?periodo=${periodo}`,
+    `/api/dashboard/produtos-ranking?periodo=${periodo}`,
     fetcher,
     { refreshInterval: 300000 }
   )
 
   const { data: vendasPorDia, isLoading: loadingVendas } = useSWR(
-    `/api/dashboard/vendas-por-dia`,
+    `/api/dashboard/faturamento-serie?periodo=${periodo}`,
     fetcher,
     { refreshInterval: 300000 }
   )

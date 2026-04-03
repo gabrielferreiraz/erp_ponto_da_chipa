@@ -82,6 +82,19 @@ export async function deleteUsuarioAction(id: string) {
 
   if (id === session.user.id) throw new Error('Você não pode excluir sua própria conta')
 
+  // Verifica se o usuário possui registros vinculados que impediriam a exclusão
+  const [pedidosCount, movimentacoesCount, fechamentosCount] = await Promise.all([
+    prisma.pedido.count({ where: { OR: [{ atendenteId: id }, { caixaId: id }] } }),
+    prisma.movimentacaoEstoque.count({ where: { usuarioId: id } }),
+    prisma.shiftClosing.count({ where: { usuarioId: id } }),
+  ])
+
+  if (pedidosCount > 0 || movimentacoesCount > 0 || fechamentosCount > 0) {
+    throw new Error(
+      'Não é possível excluir este usuário pois ele possui registros vinculados (pedidos, movimentações ou fechamentos de turno). Desative-o em vez de excluir.'
+    )
+  }
+
   await prisma.usuario.delete({ where: { id } })
 
   revalidatePath('/admin/usuarios')

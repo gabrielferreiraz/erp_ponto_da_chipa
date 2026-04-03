@@ -93,14 +93,33 @@ export function withSecurity(
     try {
       return await handler(req, session, context)
     } catch (error: any) {
+      const message: string = error?.message || ''
+
+      // Erros de negócio conhecidos: preservar status code e mensagem real
+      const knownErrors: Record<string, number> = {
+        'NOT_FOUND:': 404,
+        'BAD_REQUEST:': 400,
+        'CONFLICT:': 409,
+        'FORBIDDEN:': 403,
+      }
+
+      for (const [prefix, status] of Object.entries(knownErrors)) {
+        if (message.startsWith(prefix)) {
+          return NextResponse.json(
+            { error: message.slice(prefix.length).trim() },
+            { status }
+          )
+        }
+      }
+
+      // Erro inesperado: logar e retornar 500 genérico
       SecurityLogger.log({
         event: 'SERVER_ERROR',
         route,
         ip,
         userId: session?.user?.id,
-        details: error.message
+        details: message
       })
-      // Nunca expor stack trace
       return NextResponse.json({ error: 'Erro interno no servidor' }, { status: 500 })
     }
   }

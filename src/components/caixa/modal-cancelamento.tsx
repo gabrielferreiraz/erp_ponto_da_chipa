@@ -36,10 +36,11 @@ export function ModalCancelamento({ item, onClose }: ModalCancelamentoProps) {
     try {
       setIsSubmitting(true)
       const payload = {
+        itemId: item.id,
         motivoCancelamento: motivo.trim(),
         quantidadeCancelada: Number(quantidade)
       }
-      const res = await fetch(`/api/caixa/${item.id}/cancelar-item`, {
+      const res = await fetch(`/api/caixa/${item.pedidoId}/cancelar-item`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
