@@ -12,6 +12,7 @@ export type FilaPedidoFrontend = Omit<Prisma.PedidoGetPayload<{
   totalBruto: number
   totalFinal: number
   totalCancelado: number
+  observacao: string | null
   itens: FilaItemFrontend[]
 }
 

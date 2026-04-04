@@ -56,3 +56,33 @@ export async function PATCH(
     return NextResponse.json({ error: 'Erro ao editar pedido' }, { status: 500 })
   }
 }
+
+export async function DELETE(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
+  const session = await auth()
+  
+  if (!session?.user) {
+    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+  }
+
+  try {
+    const cancelado = await pedidoService.cancelarPedido(params.id, session.user.id)
+    return NextResponse.json(cancelado)
+  } catch (error: any) {
+    console.error('[DELETE_PEDIDO]', error)
+    
+    if (error.message.includes('NOT_FOUND')) {
+       return NextResponse.json({ error: 'Pedido não encontrado' }, { status: 404 })
+    }
+    if (error.message.includes('FORBIDDEN')) {
+       return NextResponse.json({ error: 'Você não tem permissão para cancelar este pedido' }, { status: 403 })
+    }
+    if (error.message.includes('CONFLICT')) {
+       return NextResponse.json({ error: 'Não é possível cancelar um pedido que já foi pago' }, { status: 409 })
+    }
+
+    return NextResponse.json({ error: 'Erro ao cancelar pedido' }, { status: 500 })
+  }
+}

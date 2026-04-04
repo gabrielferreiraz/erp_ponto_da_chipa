@@ -10,7 +10,7 @@ export class CaixaRepository {
         mesa: true,
         atendente: { select: { nome: true } },
         itens: {
-          where: { status: 'ATIVO' }, // Caixa só precisa ver itens ativos que vao compor a soma
+          where: { status: 'ATIVO' },
           include: {
             produto: {
               select: { imagemUrl: true, qtdVisor: true }

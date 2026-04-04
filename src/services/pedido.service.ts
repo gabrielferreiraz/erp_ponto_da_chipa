@@ -190,4 +190,30 @@ export class PedidoService {
     
     return finalizado
   }
+
+  async cancelarPedido(pedidoId: string, atendenteId: string) {
+    const pedidoAtual = await this.repository.findById(pedidoId)
+    
+    if (!pedidoAtual) throw new Error('NOT_FOUND: Pedido não encontrado.')
+    
+    // ADMIN pode cancelar qualquer um, ATENDENTE só o próprio
+    const usuario = await prisma.usuario.findUnique({ where: { id: atendenteId } })
+    if (!usuario) throw new Error('NOT_FOUND: Usuário não encontrado.')
+    
+    if (pedidoAtual.atendenteId !== atendenteId && usuario.role !== 'ADMIN') {
+      throw new Error('FORBIDDEN: Você não tem permissão para cancelar este pedido.')
+    }
+
+    // Só pode cancelar se não estiver PAGO
+    if (pedidoAtual.orderStatus === 'PAGO') {
+      throw new Error('CONFLICT: Não é possível cancelar um pedido que já foi pago.')
+    }
+    
+    const cancelado = await this.repository.updateStatus(pedidoId, 'CANCELADO')
+    
+    sseEmitter.emit('pedido_pago') // Notifica o caixa para atualizar a fila
+    sseEmitter.emit('novo_pedido') // Notifica o atendente para atualizar a lista
+    
+    return cancelado
+  }
 }

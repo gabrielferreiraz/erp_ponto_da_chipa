@@ -1,13 +1,13 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Drawer } from 'vaul'
-import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { useFilaCaixa, FilaPedidoFrontend } from '@/hooks/use-fila-caixa'
 import { useProdutos } from '@/hooks/use-produtos'
-import { CheckCircle2, Banknote, CreditCard, ScanLine, Smartphone, Minus, Plus, Trash2, Search, Package, ShoppingBag, X, Loader2 } from 'lucide-react'
+import { CheckCircle2, Banknote, CreditCard, ScanLine, Smartphone, Minus, Plus, Trash2, Search, ShoppingBag, X, Loader2 } from 'lucide-react'
 import { useMediaQuery } from '@/hooks/use-media-query'
 import { cn } from '@/lib/utils'
 
@@ -25,6 +25,7 @@ export function ModalPagamento({ pedido: stalePedido, onClose }: ModalPagamentoP
   const [isProcessingItem, setIsProcessingItem] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [showSearch, setShowSearch] = useState(false)
+  const [valorRecebido, setValorRecebido] = useState('')
   
   const { fila, mutate } = useFilaCaixa()
   const { produtos } = useProdutos()
@@ -94,10 +95,13 @@ export function ModalPagamento({ pedido: stalePedido, onClose }: ModalPagamentoP
   }
 
   if (!pedido) return null
-  
+
   const total = pedido.itens.reduce((acc, curr) => acc + (Number(curr.precoSnapshot) * curr.quantidade), 0)
 
-  const InnerContent = () => (
+  const valorNum = parseFloat(valorRecebido.replace(',', '.')) || 0
+  const troco = forma === 'DINHEIRO' && valorNum > total ? valorNum - total : null
+
+  const innerContent = (
     <div className="flex flex-col h-full max-h-[90vh]">
       <div className="px-6 py-4 border-b border-zinc-100 bg-white sticky top-0 z-20">
         <div className="flex items-center justify-between">
@@ -113,11 +117,11 @@ export function ModalPagamento({ pedido: stalePedido, onClose }: ModalPagamentoP
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6 no-scrollbar bg-zinc-50/30">
-        {/* Adicionar Itens Rápidos */}
+      {/* Adicionar Itens Rápidos — fora do scroll para o dropdown não ser clipado */}
+      <div className="px-6 pt-4 pb-2 bg-zinc-50/30">
         <div className="relative">
           {!showSearch ? (
-            <button 
+            <button
               onClick={() => setShowSearch(true)}
               className="w-full flex items-center justify-between p-4 rounded-2xl border-2 border-dashed border-zinc-200 bg-white hover:border-orange-400 hover:bg-orange-50/30 transition-all group"
             >
@@ -131,7 +135,7 @@ export function ModalPagamento({ pedido: stalePedido, onClose }: ModalPagamentoP
             <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
               <div className="relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-                <input 
+                <input
                   autoFocus
                   className="w-full h-12 pl-11 pr-10 bg-white border border-zinc-200 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
                   placeholder="Pesquisar produto..."
@@ -142,11 +146,11 @@ export function ModalPagamento({ pedido: stalePedido, onClose }: ModalPagamentoP
                   <X className="w-4 h-4 text-zinc-400" />
                 </button>
               </div>
-              
+
               {filteredProdutos.length > 0 && (
-                <div className="bg-white border border-zinc-200 rounded-2xl shadow-xl overflow-hidden divide-y divide-zinc-50">
+                <div className="absolute left-0 right-0 top-full z-30 bg-white border border-zinc-200 rounded-2xl shadow-xl overflow-hidden divide-y divide-zinc-50">
                   {filteredProdutos.map(p => (
-                    <button 
+                    <button
                       key={p.id}
                       onClick={() => handleUpdateItem(p.id, 'ADICIONAR')}
                       className="w-full p-4 flex items-center justify-between hover:bg-orange-50 transition-colors group"
@@ -163,7 +167,9 @@ export function ModalPagamento({ pedido: stalePedido, onClose }: ModalPagamentoP
             </div>
           )}
         </div>
+      </div>
 
+      <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6 no-scrollbar bg-zinc-50/30">
         {/* Lista de Itens do Pedido */}
         <div className="space-y-3">
           <div className="flex items-center gap-2 px-1">
@@ -215,15 +221,15 @@ export function ModalPagamento({ pedido: stalePedido, onClose }: ModalPagamentoP
               { id: 'CARTAO_DEBITO', icon: CreditCard, label: 'DÉBITO', color: 'zinc' },
               { id: 'CARTAO_CREDITO', icon: Smartphone, label: 'CRÉDITO', color: 'zinc' }
             ].map(p => (
-              <button 
+              <button
                 key={p.id}
                 disabled={isSubmitting || showSuccess || pedido.itens.length === 0}
-                onClick={() => setForma(p.id as FormaPagto)}
+                onClick={() => { setForma(p.id as FormaPagto); setValorRecebido('') }}
                 className={cn(
                   "h-16 flex flex-col items-center justify-center gap-1 rounded-2xl border-2 font-bold transition-all active:scale-95",
-                  forma === p.id 
-                    ? p.color === 'teal' 
-                      ? "bg-teal-600 text-white border-teal-600 shadow-lg shadow-teal-600/20" 
+                  forma === p.id
+                    ? p.color === 'teal'
+                      ? "bg-teal-600 text-white border-teal-600 shadow-lg shadow-teal-600/20"
                       : "bg-zinc-900 text-white border-zinc-900 shadow-lg shadow-zinc-900/20"
                     : p.color === 'teal'
                       ? "bg-teal-50 text-teal-700 border-teal-100 hover:bg-teal-100"
@@ -235,6 +241,58 @@ export function ModalPagamento({ pedido: stalePedido, onClose }: ModalPagamentoP
               </button>
             ))}
           </div>
+
+          {/* Troco — só exibe para DINHEIRO */}
+          <AnimatePresence>
+            {forma === 'DINHEIRO' && (
+              <motion.div
+                key="dinheiro-panel"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
+                className="overflow-hidden"
+              >
+                <div className="mt-3 space-y-2">
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1">
+                      <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest block mb-1.5">
+                        Valor recebido
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-zinc-400">R$</span>
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          pattern="[0-9]*[.,]?[0-9]*"
+                          placeholder="0,00"
+                          value={valorRecebido}
+                          onChange={e => setValorRecebido(e.target.value)}
+                          disabled={isSubmitting || showSuccess}
+                          className="w-full h-11 pl-9 pr-3 bg-white border border-zinc-200 rounded-xl text-sm font-mono font-bold focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-400 transition-all disabled:opacity-50"
+                        />
+                      </div>
+                    </div>
+
+                    <div className={cn(
+                      "flex-1 h-11 rounded-xl flex flex-col items-center justify-center mt-[22px] transition-all",
+                      troco !== null
+                        ? "bg-emerald-50 border border-emerald-200"
+                        : "bg-zinc-50 border border-zinc-100"
+                    )}>
+                      <span className="text-[9px] font-black uppercase tracking-widest text-zinc-400 leading-none mb-0.5">Troco</span>
+                      <span className={cn(
+                        "font-mono text-sm font-black tabular-nums",
+                        troco !== null ? "text-emerald-600" : "text-zinc-300"
+                      )}>
+                        {troco !== null ? formatMoney(troco) : '—'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
@@ -268,7 +326,7 @@ export function ModalPagamento({ pedido: stalePedido, onClose }: ModalPagamentoP
     return (
       <Dialog open={!!pedido} onOpenChange={(open) => { if (!isSubmitting) onClose() }}>
         <DialogContent className="sm:max-w-md p-0 border-none shadow-[0_24px_48px_-12px_rgba(0,0,0,0.2)] sm:rounded-[32px] overflow-hidden focus:outline-none no-scrollbar">
-          <InnerContent />
+          {innerContent}
         </DialogContent>
       </Dialog>
     )
@@ -280,7 +338,7 @@ export function ModalPagamento({ pedido: stalePedido, onClose }: ModalPagamentoP
         <Drawer.Overlay className="fixed inset-0 bg-black/60 z-50 backdrop-blur-md" />
         <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 flex flex-col rounded-t-[32px] bg-white shadow-[0_-24px_48px_-12px_rgba(0,0,0,0.2)] focus:outline-none no-scrollbar">
           <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-zinc-200 mt-4 mb-2" />
-          <InnerContent />
+          {innerContent}
         </Drawer.Content>
       </Drawer.Portal>
     </Drawer.Root>

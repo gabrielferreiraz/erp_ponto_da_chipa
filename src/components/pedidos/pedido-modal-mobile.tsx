@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { mutate as globalMutate } from 'swr'
 import { Plus, Search, Minus, ShoppingBag, Package, X, MapPin, Clock, Flame } from 'lucide-react'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Drawer } from 'vaul'
@@ -65,15 +66,28 @@ export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoMo
   const handleBuscaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setBusca(e.target.value)
   }
-  const [carrinho, setCarrinho] = useState<CartItem[]>(
-    pedidoEdicao ? pedidoEdicao.itens.map(i => ({
-      produtoId: i.produtoId,
-      nome: i.nomeSnapshot,
-      preco: Number(i.precoSnapshot),
-      quantidade: i.quantidade,
-      qtdVisor: 999,
-    })) : []
-  )
+  const [carrinho, setCarrinho] = useState<CartItem[]>([])
+
+  // Sincronizar carrinho ao abrir para edição
+  useEffect(() => {
+    if (open && pedidoEdicao) {
+      setCarrinho(pedidoEdicao.itens.map(i => ({
+        produtoId: i.produtoId,
+        nome: i.nomeSnapshot,
+        preco: Number(i.precoSnapshot),
+        quantidade: i.quantidade,
+        qtdVisor: 999,
+      })))
+      setTipo(pedidoEdicao.tipo)
+      setMesaId(pedidoEdicao.mesaId)
+      setObservacao(pedidoEdicao.observacao || '')
+    } else if (open && !pedidoEdicao) {
+      setCarrinho([])
+      setTipo('LOCAL')
+      setMesaId(null)
+      setObservacao('')
+    }
+  }, [open, pedidoEdicao])
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const produtosFiltrados = produtos
@@ -82,7 +96,17 @@ export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoMo
       const matchesCategoria = categoriaAtiva === 'all' || p.categoriaId === categoriaAtiva
       return matchesBusca && matchesCategoria
     })
-    .sort((a, b) => (b.sales_count || 0) - (a.sales_count || 0))
+    .sort((a, b) => {
+      // Prioridade 1: Produtos que já estão no carrinho (o que o cliente já pediu)
+      const aInCart = carrinho.some(item => item.produtoId === a.id)
+      const bInCart = carrinho.some(item => item.produtoId === b.id)
+      
+      if (aInCart && !bInCart) return -1
+      if (!aInCart && bInCart) return 1
+      
+      // Prioridade 2: Top Sellers (volume de vendas)
+      return (b.sales_count || 0) - (a.sales_count || 0)
+    })
 
   // Identificar top 2 de cada categoria para o badge
   const top2Ids = new Set<string>()
@@ -152,6 +176,33 @@ export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoMo
         itens: carrinho.map(c => ({ produtoId: c.produtoId, quantidade: c.quantidade }))
       }
 
+      // Se o pedido estiver em AGUARDANDO_COBRANCA, usamos rotas de caixa se houver itens novos
+      if (pedidoEdicao?.orderStatus === 'AGUARDANDO_COBRANCA') {
+        // Para simplificar e garantir atomicidade, usamos a rota de atualização padrão se permitida, 
+        // ou disparamos as adições individuais. Como a rota PATCH /api/pedidos/[id] bloqueia não-ABERTO,
+        // vamos usar a rota de adicionar-item do caixa para cada item novo.
+        
+        const itensOriginaisIds = new Set(pedidoEdicao.itens.map(i => i.produtoId))
+        const itensNovos = carrinho.filter(c => !itensOriginaisIds.has(c.produtoId))
+
+        if (itensNovos.length > 0) {
+          toast.loading('Adicionando novos itens ao caixa...', { id: 'caixa-add' })
+          for (const item of itensNovos) {
+            await fetch(`/api/caixa/${pedidoEdicao.id}/adicionar-item`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ produtoId: item.produtoId, quantidade: item.quantidade })
+            })
+          }
+          toast.success('Itens adicionados com sucesso!', { id: 'caixa-add' })
+        }
+        
+        mutate()
+        globalMutate('/api/caixa/fila')
+        onOpenChange(false)
+        return
+      }
+
       const url = pedidoEdicao ? `/api/pedidos/${pedidoEdicao.id}` : '/api/pedidos'
       const method = pedidoEdicao ? 'PATCH' : 'POST'
 
@@ -166,8 +217,25 @@ export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoMo
         throw new Error(error.error || 'Erro ao salvar pedido')
       }
 
-      toast.success(pedidoEdicao ? 'Pedido atualizado!' : 'Pedido criado com sucesso!')
+      const novoPedido = await res.json()
+
+      // Otimização para VIAGEM: Enviar direto para o caixa se for um novo pedido
+      if (tipo === 'VIAGEM' && !pedidoEdicao) {
+        toast.loading('Processando pedido para viagem...', { id: 'viagem-confirm' })
+        
+        const confirmRes = await fetch(`/api/pedidos/${novoPedido.id}/confirmar`, { method: 'PATCH' })
+        
+        if (!confirmRes.ok) {
+          toast.error('Pedido criado, mas erro ao enviar para o caixa.', { id: 'viagem-confirm' })
+        } else {
+          toast.success('Pedido para viagem enviado direto ao caixa!', { id: 'viagem-confirm' })
+        }
+      } else {
+        toast.success(pedidoEdicao ? 'Pedido atualizado!' : 'Pedido criado com sucesso!')
+      }
+
       mutate()
+      globalMutate('/api/caixa/fila')
       onOpenChange(false)
       
       if (!pedidoEdicao) {

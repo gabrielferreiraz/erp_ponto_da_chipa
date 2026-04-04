@@ -101,6 +101,7 @@ export function withSecurity(
         'BAD_REQUEST:': 400,
         'CONFLICT:': 409,
         'FORBIDDEN:': 403,
+        'FECHAMENTO_EM_ANDAMENTO:': 503,
       }
 
       for (const [prefix, status] of Object.entries(knownErrors)) {
