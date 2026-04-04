@@ -166,6 +166,45 @@ export default function EstoquePage() {
         </div>
       </div>
 
+      {/* ── Alerta de Visor ── */}
+      {(() => {
+        const criticos = dashboard?.produtos.filter(p => p.status === 'CRITICO' || p.status === 'ALERTA') ?? []
+        if (criticos.length === 0) return null
+        return (
+          <div className="border-b border-amber-200 bg-amber-50 px-8 py-3 shrink-0">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-[11px] font-black text-amber-800 uppercase tracking-widest mb-2">
+                  {criticos.length} produto{criticos.length !== 1 ? 's' : ''} precisam de atenção no visor
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {criticos.map(p => (
+                    <button
+                      key={p.id}
+                      onClick={() => { setSelRepo(p); setAba('inventario') }}
+                      className={cn(
+                        "flex items-center gap-2 px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-all",
+                        p.status === 'CRITICO'
+                          ? "bg-rose-100 border-rose-200 text-rose-700 hover:bg-rose-200"
+                          : "bg-amber-100 border-amber-200 text-amber-700 hover:bg-amber-200"
+                      )}
+                    >
+                      <span className={cn(
+                        "w-1.5 h-1.5 rounded-full shrink-0",
+                        p.status === 'CRITICO' ? "bg-rose-500" : "bg-amber-500"
+                      )} />
+                      {p.nome}
+                      <span className="font-mono font-black tabular-nums opacity-70">{p.qtdVisor}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
+
       {/* ── Conteúdo ── */}
       <main className="flex-1 overflow-y-auto p-8 no-scrollbar">
 

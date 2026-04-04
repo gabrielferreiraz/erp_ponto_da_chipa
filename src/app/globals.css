@@ -95,6 +95,53 @@
   }
 }
 
+/* react-day-picker custom theme */
+.rdp-custom .rdp-root {
+  --rdp-accent-color: #e11d48;
+  --rdp-accent-background-color: #fff1f2;
+  font-family: inherit;
+}
+.rdp-custom .rdp-day_button {
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 13px;
+}
+.rdp-custom .rdp-selected .rdp-day_button {
+  background-color: #e11d48;
+  color: #fff;
+}
+.rdp-custom .rdp-range_middle .rdp-day_button {
+  background-color: #fff1f2;
+  color: #e11d48;
+  border-radius: 0;
+}
+.rdp-custom .rdp-range_start .rdp-day_button,
+.rdp-custom .rdp-range_end .rdp-day_button {
+  background-color: #e11d48;
+  color: #fff;
+}
+.rdp-custom .rdp-today .rdp-day_button {
+  font-weight: 900;
+  color: #e11d48;
+}
+.rdp-custom .rdp-nav button {
+  border-radius: 10px;
+}
+.rdp-custom .rdp-month_caption {
+  font-size: 13px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #18181b;
+}
+.rdp-custom .rdp-weekday {
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #a1a1aa;
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;

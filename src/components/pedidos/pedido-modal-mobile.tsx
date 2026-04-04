@@ -52,7 +52,7 @@ export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoMo
   // Efeito para focar o input quando expandir a busca
   useEffect(() => {
     if (isSearchExpanded && searchInputRef.current) {
-      searchInputRef.current.focus()
+      searchInputRef.current.focus({ preventScroll: true })
     }
   }, [isSearchExpanded])
 
@@ -323,6 +323,7 @@ export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoMo
                       placeholder="Buscar..."
                       value={busca}
                       onChange={handleBuscaChange}
+                      onFocus={(e) => e.target.scrollIntoView({ block: 'nearest', behavior: 'instant' })}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           searchInputRef.current?.blur()
@@ -616,9 +617,9 @@ export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoMo
     >
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 bg-black/40 z-50 backdrop-blur-sm" />
-        <Drawer.Content 
+        <Drawer.Content
           className="fixed bottom-0 left-0 right-0 h-[96dvh] bg-white rounded-t-2xl z-50 overflow-hidden flex flex-col focus:outline-none"
-          onOpenAutoFocus={(e) => e.preventDefault()} // Evita pular o scroll ao focar
+          onOpenAutoFocus={(e) => e.preventDefault()}
         >
           <div className="w-12 h-1.5 bg-zinc-300 rounded-full mx-auto my-4 shrink-0" />
           {renderContent}
