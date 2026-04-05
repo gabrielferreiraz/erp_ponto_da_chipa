@@ -17,7 +17,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] flex overflow-hidden font-sans">
+    <div className="h-screen bg-[#F8F9FA] flex overflow-hidden font-sans">
       <Sidebar user={session.user} />
 
       {/* Main Content Area */}

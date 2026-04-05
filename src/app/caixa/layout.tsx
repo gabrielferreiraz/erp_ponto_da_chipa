@@ -17,7 +17,7 @@ export default async function CaixaLayout({ children }: { children: React.ReactN
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] flex overflow-hidden font-sans">
+    <div className="h-screen bg-[#F8F9FA] flex overflow-hidden font-sans">
       <SidebarCaixa user={session.user} />
 
       {/* Main Content Area */}
