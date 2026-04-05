@@ -11,6 +11,7 @@ import { CancelamentosTable } from '@/components/dashboard/cancelamentos-table'
 import { MesasTable } from '@/components/dashboard/mesas-table'
 import { ProdutosRankingTable } from '@/components/dashboard/produtos-ranking-table'
 import { Layers, RefreshCcw } from 'lucide-react'
+import { ExportButton } from '@/components/dashboard/export-button'
 
 export default function AdminDashboardPage() {
   return (
@@ -36,6 +37,7 @@ export default function AdminDashboardPage() {
              <button className="flex items-center justify-center gap-2 h-11 px-4 rounded-2xl bg-white border border-zinc-200/50 text-zinc-400 hover:text-zinc-900 hover:border-zinc-300 transition-all shadow-sm ring-1 ring-black/[0.02] active:scale-95">
                 <RefreshCcw className="w-4 h-4" />
              </button>
+             <ExportButton />
           </div>
         </header>
 
