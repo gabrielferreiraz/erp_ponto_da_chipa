@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth-instance'
 import { redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { Sidebar } from './sidebar'
+import { LiveClock } from '@/components/ui/live-clock'
 
 export const metadata: Metadata = {
   title: 'Administração — Ponto da Chipa',
@@ -32,9 +33,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
              <div className="h-8 w-px bg-zinc-200/50 hidden sm:block" />
              <div className="hidden sm:flex items-center gap-3">
                <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Acesso em</span>
-               <span className="text-sm font-mono font-black text-zinc-900 tabular-nums">
-                 {new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-               </span>
+               <LiveClock className="text-sm font-mono font-black text-zinc-900 tabular-nums" />
              </div>
           </div>
         </header>
