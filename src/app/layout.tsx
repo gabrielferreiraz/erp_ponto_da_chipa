@@ -1,17 +1,33 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
+import { Toaster } from 'sonner'
+import { cn } from '@/lib/utils'
+import { PwaRegister } from '@/components/pwa-register'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'Ponto da Chipa — Sistema de Gestão',
   description: 'Sistema de gestão de pedidos, caixa e estoque para a Ponto da Chipa',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Chipa ERP',
+  },
+  formatDetection: {
+    telephone: false,
+  },
 }
 
-import { Toaster } from 'sonner'
-import { cn } from "@/lib/utils";
-
+export const viewport: Viewport = {
+  themeColor: '#18181b',
+  width: 'device-width',
+  initialScale: 1,
+  minimumScale: 1,
+  viewportFit: 'cover',
+}
 
 export default function RootLayout({
   children,
@@ -28,6 +44,7 @@ export default function RootLayout({
       >
         {children}
         <Toaster richColors position="top-right" />
+        <PwaRegister />
       </body>
     </html>
   )
