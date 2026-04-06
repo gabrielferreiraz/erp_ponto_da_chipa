@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { Plus } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { ProdutoTable } from '@/components/produtos/produto-table'
 import { ProdutoFilters as FiltersComponent } from '@/components/produtos/produto-filters'
 import { ProdutoFormDialog } from '@/components/produtos/produto-form-dialog'
@@ -31,21 +30,19 @@ export default function ProdutosPage() {
   }
 
   return (
-    <div className="p-8 max-w-[1400px] mx-auto space-y-6">
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-zinc-900">Produtos</h1>
-          <p className="text-sm text-zinc-500 mt-1">
-            Gerencie o catálogo de produtos e os estoques de vitrine do sistema.
-          </p>
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-black tracking-tighter text-zinc-900 uppercase">Produtos</h1>
+          <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-[0.2em]">Catálogo & Estoque de Vitrine</p>
         </div>
-        <Button 
+        <button
           onClick={() => setIsDialogOpen(true)}
-          className="bg-amber-500 hover:bg-amber-600 text-white shadow-sm gap-2 whitespace-nowrap"
+          className="flex items-center gap-2 h-11 px-5 rounded-2xl bg-zinc-950 text-white text-[11px] font-black uppercase tracking-widest hover:bg-zinc-800 transition-all shadow-sm active:scale-95 whitespace-nowrap"
         >
           <Plus className="w-4 h-4" />
           Novo Produto
-        </Button>
+        </button>
       </div>
 
       <div className="space-y-4">

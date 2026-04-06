@@ -8,11 +8,9 @@ import {
   TableHeader, 
   TableRow 
 } from '@/components/ui/table'
-import { Button } from '@/components/ui/button'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Badge } from '@/components/ui/badge'
 import { useProdutos, ProdutoFrontend, ProdutoFilters } from '@/hooks/use-produtos'
-import { Loader2, MoreVertical, Edit2, Ban, CheckCircle } from 'lucide-react'
+import { Loader2, Edit2, Ban, CheckCircle } from 'lucide-react'
 import { formatCurrency } from '@/lib/format'
 import { toast } from 'sonner'
 
@@ -74,7 +72,7 @@ export function ProdutoTable({ filters, onEdit }: Props) {
             <TableHead>Estoque / Visor</TableHead>
             <TableHead className="text-right">Preço</TableHead>
             <TableHead className="text-center">Status</TableHead>
-            <TableHead className="w-[50px]"></TableHead>
+            <TableHead className="w-[160px] text-right">Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -124,28 +122,29 @@ export function ProdutoTable({ filters, onEdit }: Props) {
                   )}
                 </TableCell>
                 <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreVertical className="h-4 w-4 text-zinc-500" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => onEdit(p)} className="cursor-pointer gap-2">
-                        <Edit2 className="w-4 h-4 text-zinc-500" /> Editar
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => handleToggleStatus(p.id, p.disponivel)} 
-                        className="cursor-pointer gap-2"
-                      >
-                        {p.disponivel ? (
-                          <><Ban className="w-4 h-4 text-red-500" /> Desativar</>
-                        ) : (
-                          <><CheckCircle className="w-4 h-4 text-emerald-500" /> Reativar</>
-                        )}
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <div className="flex items-center justify-end gap-1">
+                    <button
+                      onClick={() => onEdit(p)}
+                      title="Editar produto"
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition-colors text-xs font-semibold"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => handleToggleStatus(p.id, p.disponivel)}
+                      title={p.disponivel ? 'Desativar produto' : 'Reativar produto'}
+                      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-colors text-xs font-semibold ${
+                        p.disponivel
+                          ? 'text-red-500 hover:bg-red-50'
+                          : 'text-emerald-600 hover:bg-emerald-50'
+                      }`}
+                    >
+                      {p.disponivel
+                        ? <><Ban className="w-3.5 h-3.5" />Desativar</>
+                        : <><CheckCircle className="w-3.5 h-3.5" />Reativar</>}
+                    </button>
+                  </div>
                 </TableCell>
               </TableRow>
             )

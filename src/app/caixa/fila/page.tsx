@@ -5,11 +5,13 @@ import {
   Clock, Banknote, XCircle, UserCircle, Hash, Loader2, Wifi, WifiOff,
   Trash2, Minus, Plus, MapPin, AlertTriangle, Search, X,
   History, ShoppingBag, Receipt, ChevronDown, ChevronUp,
-  MessageSquare, Bike, UtensilsCrossed, RotateCcw, AlertCircle
+  MessageSquare, Bike, UtensilsCrossed, RotateCcw, AlertCircle,
+  Table2, ArrowRight
 } from 'lucide-react'
 import { differenceInMinutes, format } from 'date-fns'
 import { useFilaCaixa, FilaPedidoFrontend } from '@/hooks/use-fila-caixa'
 import { useHistoricoCaixa } from '@/hooks/use-historico-caixa'
+import { useCaixaMesas } from '@/hooks/use-caixa-mesas'
 import { useTurno } from '@/hooks/use-turno'
 import { useProdutos } from '@/hooks/use-produtos'
 import { ModalCancelamento } from '@/components/caixa/modal-cancelamento'
@@ -31,11 +33,12 @@ const FORMA_LABEL: Record<string, string> = {
   CARTAO_CREDITO: 'Crédito',
 }
 
-type Aba = 'fila' | 'historico'
+type Aba = 'fila' | 'historico' | 'mesas'
 
 export default function FilaCaixaPage() {
   const { fila, isLoading, isError, mutate: mutateFila } = useFilaCaixa()
   const { pedidos: historico, totalDia, totalPorForma, isLoading: loadingHistorico, mutate: mutateHistorico } = useHistoricoCaixa()
+  const { mesas, isLoading: loadingMesas, mutate: mutateMesas } = useCaixaMesas()
   const { status: turnoStatus } = useTurno()
   const { produtos } = useProdutos()
 
@@ -192,6 +195,30 @@ export default function FilaCaixaPage() {
     }
   }
 
+  const handleCobrarMesa = async (pedido: any) => {
+    try {
+      setIsProcessing(pedido.id)
+      if (pedido.orderStatus === 'ABERTO') {
+        const res = await fetch(`/api/pedidos/${pedido.id}/confirmar`, { method: 'POST' })
+        if (!res.ok) {
+          const err = await res.json()
+          throw new Error(err.error || 'Erro ao confirmar pedido')
+        }
+        mutateFila()
+        mutateMesas()
+      }
+      setPagarPedido(pedido as FilaPedidoFrontend)
+    } catch (err: any) {
+      toast.error(err.message)
+      setIsProcessing(null)
+    }
+  }
+
+  const totalMesas = mesas.reduce((acc, m) =>
+    acc + m.pedidos.reduce((s, p) =>
+      s + p.itens.reduce((t, i) => t + Number(i.precoSnapshot) * i.quantidade, 0), 0), 0
+  )
+
   const totalFila = fila.reduce((acc, p) =>
     acc + p.itens.reduce((s, i) => s + Number(i.precoSnapshot) * i.quantidade, 0), 0
   )
@@ -255,6 +282,24 @@ export default function FilaCaixaPage() {
                   </span>
                 )}
               </button>
+              <button
+                onClick={() => { setAba('mesas'); mutateMesas() }}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-1.5 rounded-lg text-[12px] font-bold transition-all",
+                  aba === 'mesas' ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-700"
+                )}
+              >
+                <Table2 className="w-3.5 h-3.5" />
+                Mesas
+                {mesas.length > 0 && (
+                  <span className={cn(
+                    "min-w-[18px] h-[18px] rounded-full flex items-center justify-center font-mono text-[10px] font-black tabular-nums px-1",
+                    aba === 'mesas' ? "bg-zinc-900 text-white" : "bg-zinc-300/60 text-zinc-500"
+                  )}>
+                    {mesas.length}
+                  </span>
+                )}
+              </button>
             </div>
           </div>
 
@@ -291,6 +336,13 @@ export default function FilaCaixaPage() {
                 <Banknote className="w-3.5 h-3.5 text-emerald-500" />
                 <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Total do dia</span>
                 <span className="font-mono text-sm font-black text-emerald-700 tabular-nums">{formatMoney(totalDia)}</span>
+              </div>
+            )}
+            {aba === 'mesas' && totalMesas > 0 && (
+              <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-100 rounded-xl shrink-0">
+                <Table2 className="w-3.5 h-3.5 text-blue-500" />
+                <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Em mesas</span>
+                <span className="font-mono text-sm font-black text-blue-700 tabular-nums">{formatMoney(totalMesas)}</span>
               </div>
             )}
           </div>
@@ -628,6 +680,103 @@ export default function FilaCaixaPage() {
                           </div>
                         )}
                       </div>
+                    )
+                  })}
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {/* ABA: MESAS */}
+          {aba === 'mesas' && (
+            <motion.div
+              key="mesas"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="space-y-4"
+            >
+              {loadingMesas ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="h-[220px] bg-white rounded-[24px] border border-zinc-200/60 animate-pulse" />
+                  ))}
+                </div>
+              ) : mesas.length === 0 ? (
+                <div className="w-full h-64 flex flex-col items-center justify-center gap-3 text-center">
+                  <div className="w-14 h-14 rounded-3xl bg-white border border-zinc-200/60 shadow-sm flex items-center justify-center">
+                    <Table2 className="w-6 h-6 text-zinc-200" strokeWidth={1.5} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-zinc-900">Nenhuma mesa em andamento</p>
+                    <p className="text-[11px] text-zinc-400 uppercase tracking-widest mt-1">Todas as mesas estão livres</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {mesas.map(mesa => {
+                    const pedido = mesa.pedidos[0]
+                    if (!pedido) return null
+                    const total = pedido.itens.reduce((acc, i) => acc + Number(i.precoSnapshot) * i.quantidade, 0)
+                    const urg = getUrgencia(pedido.criadoEm)
+                    const isAberto = pedido.orderStatus === 'ABERTO'
+
+                    return (
+                      <article key={mesa.id} className="flex flex-col bg-white rounded-[24px] shadow-sm ring-1 ring-zinc-950/[0.04] overflow-hidden relative">
+                        {/* Barra lateral de urgência */}
+                        <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-[24px]" style={{ backgroundColor: urg.barColor }} />
+
+                        <div className="px-5 pt-5 pb-4 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Table2 className="w-4 h-4 text-zinc-400" strokeWidth={1.5} />
+                              <span className="font-black text-lg text-zinc-900 tracking-tight">Mesa {mesa.numero}</span>
+                            </div>
+                            <span className={cn("flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black tabular-nums", urg.badge)}>
+                              <Clock className="w-3 h-3" strokeWidth={2.5} />
+                              {formatCompactTime(pedido.criadoEm)}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-1.5">
+                            <UserCircle className="w-3 h-3 text-zinc-400" />
+                            <span className="text-[11px] font-semibold text-zinc-400">{pedido.atendente.nome.split(' ')[0]}</span>
+                            {isAberto && (
+                              <span className="ml-1 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-widest bg-amber-50 text-amber-600">Em atendimento</span>
+                            )}
+                          </div>
+
+                          <div className="border-t border-zinc-100 pt-3 space-y-1.5">
+                            {pedido.itens.slice(0, 3).map(item => (
+                              <div key={item.id} className="flex items-center justify-between text-[12px]">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <span className="w-5 text-center font-mono text-[10px] font-black text-zinc-500 bg-zinc-100 rounded-md py-0.5">{item.quantidade}x</span>
+                                  <span className="font-semibold text-zinc-600 truncate">{item.nomeSnapshot}</span>
+                                </div>
+                                <span className="font-mono text-[11px] font-bold text-zinc-400 tabular-nums shrink-0 ml-2">{formatMoney(item.precoSnapshot * item.quantidade)}</span>
+                              </div>
+                            ))}
+                            {pedido.itens.length > 3 && (
+                              <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">+{pedido.itens.length - 3} item(ns)...</p>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="px-5 pb-5 mt-auto">
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Total da mesa</span>
+                            <span className="font-mono text-base font-black text-zinc-900 tabular-nums">{formatMoney(total)}</span>
+                          </div>
+                          <button
+                            onClick={() => handleCobrarMesa(pedido)}
+                            disabled={isProcessing === pedido.id}
+                            className="w-full flex items-center justify-center gap-2 h-11 rounded-2xl bg-zinc-950 text-white text-[11px] font-black uppercase tracking-widest hover:bg-zinc-800 transition-all active:scale-95 disabled:opacity-50"
+                          >
+                            {isProcessing === pedido.id
+                              ? <Loader2 className="w-4 h-4 animate-spin" />
+                              : <><ArrowRight className="w-4 h-4" />Cobrar Mesa {mesa.numero}</>
+                            }
+                          </button>
+                        </div>
+                      </article>
                     )
                   })}
                 </div>

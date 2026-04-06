@@ -138,11 +138,11 @@ export default function FechamentoPage() {
   if (loadingStatus) return <div className="p-8"><Skeleton className="h-20 w-full" /></div>
 
   return (
-    <div className="p-8 max-w-[1200px] mx-auto space-y-8">
+    <div className="space-y-8 animate-in fade-in duration-500">
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div>
-          <h1 className="text-3xl font-black tracking-tight text-zinc-900">Fechamento de Turno</h1>
-          <p className="text-zinc-500 font-medium">Controle de inventário e encerramento operacional.</p>
+        <div className="space-y-1">
+          <h1 className="text-3xl font-black tracking-tighter text-zinc-900 uppercase">Fechamento de Turno</h1>
+          <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-[0.2em]">Controle de Inventário & Encerramento Operacional</p>
         </div>
 
         {!status?.isClosingShift ? (

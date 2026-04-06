@@ -16,6 +16,9 @@ import {
   ChevronLeft,
   Menu,
   X,
+  ShoppingCart,
+  UtensilsCrossed,
+  ExternalLink,
 } from 'lucide-react'
 import { logoutAction } from '@/actions/auth'
 import { cn } from '@/lib/utils'
@@ -128,6 +131,33 @@ export function Sidebar({ user }: SidebarProps) {
             )
           })}
         </nav>
+
+        {/* Operações — links discretos para visão de caixa/atendente */}
+        {!isCollapsed && (
+          <div className="px-4 pb-3">
+            <p className="text-[9px] font-black uppercase tracking-[0.25em] text-zinc-300 px-4 mb-2">Operações</p>
+            <Link
+              href="/caixa/fila"
+              className="group flex items-center justify-between px-4 py-2.5 rounded-2xl text-zinc-400 hover:bg-zinc-50 hover:text-zinc-700 transition-all duration-200"
+            >
+              <div className="flex items-center gap-3">
+                <ShoppingCart className="w-4 h-4 flex-shrink-0 group-hover:text-[#E24A07] transition-colors" strokeWidth={1.5} />
+                <span className="text-xs font-semibold tracking-tight">Visão de Caixa</span>
+              </div>
+              <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-60 transition-opacity" />
+            </Link>
+            <Link
+              href="/atendente/pedidos"
+              className="group flex items-center justify-between px-4 py-2.5 rounded-2xl text-zinc-400 hover:bg-zinc-50 hover:text-zinc-700 transition-all duration-200"
+            >
+              <div className="flex items-center gap-3">
+                <UtensilsCrossed className="w-4 h-4 flex-shrink-0 group-hover:text-[#E24A07] transition-colors" strokeWidth={1.5} />
+                <span className="text-xs font-semibold tracking-tight">Visão de Atendente</span>
+              </div>
+              <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-60 transition-opacity" />
+            </Link>
+          </div>
+        )}
 
         {/* User & Logout — always visible at bottom */}
         <div className={cn('shrink-0 border-t border-zinc-100/80 bg-zinc-50/30 transition-all duration-300', isCollapsed ? 'p-4' : 'p-6')}>

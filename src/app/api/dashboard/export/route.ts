@@ -359,12 +359,51 @@ function buildHTML(data: {
     /* ── Print ── */
     @media print {
       .print-bar { display: none !important; }
-      .report { padding: 0; }
-      body { font-size: 12px; }
-      .kpi-grid { grid-template-columns: repeat(3, 1fr); }
-      .section { page-break-inside: avoid; }
-      .cover { page-break-after: always; }
-      @page { size: A4; margin: 18mm 16mm; }
+
+      /* Reset screen padding — margins come from @page */
+      .report { max-width: 100%; padding: 0; }
+
+      body { font-size: 11px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+      /* Compact cover: just a top header band, no full-page break */
+      .cover {
+        padding: 0 0 14px;
+        margin-bottom: 20px;
+        border-bottom-width: 2px;
+      }
+      .cover-logo { margin-bottom: 12px; }
+      .cover-icon { width: 36px; height: 36px; font-size: 18px; }
+      .cover-company { font-size: 18px; }
+      .cover-title { font-size: 22px; margin-bottom: 8px; }
+      .cover-period { font-size: 12px; padding: 5px 12px; }
+      .cover-meta { gap: 20px; margin-top: 10px; }
+      .cover-meta-item span { font-size: 12px; }
+
+      /* Sections: keep heading + first rows together, allow breaks between sections */
+      .section { margin-bottom: 20px; break-inside: auto; }
+      .section-title { margin-bottom: 4px; padding-bottom: 6px; font-size: 13px; }
+
+      /* Prevent orphaned headings: keep title glued to first table row */
+      .section-title { break-after: avoid; }
+      table { break-inside: auto; }
+      thead { display: table-header-group; }   /* repeat header on each page */
+      tr { break-inside: avoid; }
+
+      /* KPI grid: 3-column, compact */
+      .kpi-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; break-inside: avoid; }
+      .kpi-card { padding: 10px 14px; border-radius: 8px; }
+      .kpi-value { font-size: 17px; }
+      .kpi-label { font-size: 9px; }
+      .kpi-sub { font-size: 10px; }
+
+      /* Tables: compact */
+      th { padding: 6px 8px; font-size: 9px; }
+      td { padding: 5px 8px; font-size: 11px; }
+
+      /* Footer */
+      .footer { margin-top: 20px; padding-top: 10px; }
+
+      @page { size: A4 portrait; margin: 14mm 14mm; }
     }
   </style>
 </head>

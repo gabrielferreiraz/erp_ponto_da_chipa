@@ -59,23 +59,23 @@ export default function EstoquePage() {
   const qtdOK         = useMemo(() => dashboard?.produtos.filter(p => p.status === 'OK').length ?? 0, [dashboard])
 
   return (
-    <div className="flex flex-col h-full bg-[#F8F9FA]">
+    <div className="space-y-8 animate-in fade-in duration-500">
 
       {/* ── Header ── */}
-      <header className="bg-white border-b border-zinc-200/60 px-8 h-16 flex items-center justify-between sticky top-0 z-10 shrink-0">
-        <div>
-          <h1 className="text-[15px] font-black tracking-tight text-zinc-900 leading-none">Gestão de Estoque</h1>
-          <p className="text-[11px] text-zinc-400 font-medium mt-0.5">Visor · Depósito · Movimentações</p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-black tracking-tighter text-zinc-900 uppercase">Estoque</h1>
+          <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-[0.2em]">Visor · Depósito · Movimentações</p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="relative w-60">
+          <div className="relative w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400" />
             <input
               type="text"
               placeholder="Buscar produto ou categoria..."
               value={busca}
               onChange={e => setBusca(e.target.value)}
-              className="w-full h-9 pl-9 pr-8 bg-zinc-50 border border-zinc-200 rounded-xl text-[13px] font-medium focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-400 transition-all"
+              className="w-full h-10 pl-9 pr-8 bg-white border border-zinc-200 rounded-2xl text-[13px] font-medium focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-400 transition-all shadow-sm"
             />
             {busca && (
               <button onClick={() => setBusca('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700">
@@ -85,17 +85,16 @@ export default function EstoquePage() {
           </div>
           <button
             onClick={() => { mutateDash(); mutateMovs() }}
-            className="h-9 px-4 flex items-center gap-2 rounded-xl bg-zinc-50 border border-zinc-200 text-[12px] font-bold text-zinc-500 hover:bg-zinc-100 transition-all"
+            className="h-10 px-4 flex items-center gap-2 rounded-2xl bg-white border border-zinc-200 text-[12px] font-bold text-zinc-500 hover:bg-zinc-50 transition-all shadow-sm"
           >
             <RefreshCw className="w-3.5 h-3.5" />
             Atualizar
           </button>
         </div>
-      </header>
+      </div>
 
       {/* ── KPIs ── */}
-      <div className="bg-white border-b border-zinc-100 px-8 py-4 shrink-0">
-        <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
 
           <div className={cn(
             "flex items-center gap-4 px-5 py-4 rounded-2xl border transition-all",
@@ -163,7 +162,6 @@ export default function EstoquePage() {
             </div>
           </div>
 
-        </div>
       </div>
 
       {/* ── Alerta de Visor ── */}
@@ -171,7 +169,7 @@ export default function EstoquePage() {
         const criticos = dashboard?.produtos.filter(p => p.status === 'CRITICO' || p.status === 'ALERTA') ?? []
         if (criticos.length === 0) return null
         return (
-          <div className="border-b border-amber-200 bg-amber-50 px-8 py-3 shrink-0">
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-6 py-4">
             <div className="flex items-start gap-3">
               <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
@@ -206,7 +204,7 @@ export default function EstoquePage() {
       })()}
 
       {/* ── Conteúdo ── */}
-      <main className="flex-1 overflow-y-auto p-8 no-scrollbar">
+      <div>
 
         {/* Tabs */}
         <div className="flex items-center gap-1 bg-zinc-100 rounded-xl p-1 w-fit mb-6">
@@ -464,7 +462,7 @@ export default function EstoquePage() {
           )}
 
         </AnimatePresence>
-      </main>
+      </div>
 
       <ModalReposicao produto={selRepo} onClose={() => setSelRepo(null)} onSuccess={handleSuccess} />
       <ModalEntrada   produto={selEntrada} onClose={() => setSelEntrada(null)} onSuccess={handleSuccess} />

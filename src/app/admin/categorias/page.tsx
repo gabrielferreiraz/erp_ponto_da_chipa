@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { Plus } from 'lucide-react'
 import { CategoriaTable } from '@/components/categorias/categoria-table'
 import { CategoriaFormDialog } from '@/components/categorias/categoria-form-dialog'
-import { Button } from '@/components/ui/button'
 import { CategoriaWithCount } from '@/hooks/use-categorias'
 
 export default function CategoriasPage() {
@@ -24,21 +23,19 @@ export default function CategoriasPage() {
   }
 
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-zinc-900">Categorias</h1>
-          <p className="text-sm text-zinc-500 mt-1">
-            Gerencie as categorias de produtos e suas ordens de exibição.
-          </p>
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-black tracking-tighter text-zinc-900 uppercase">Categorias</h1>
+          <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-[0.2em]">Organização do Catálogo</p>
         </div>
-        <Button 
+        <button
           onClick={() => setIsDialogOpen(true)}
-          className="bg-amber-500 hover:bg-amber-600 text-white shadow-sm gap-2"
+          className="flex items-center gap-2 h-11 px-5 rounded-2xl bg-zinc-950 text-white text-[11px] font-black uppercase tracking-widest hover:bg-zinc-800 transition-all shadow-sm active:scale-95 whitespace-nowrap"
         >
           <Plus className="w-4 h-4" />
           Nova Categoria
-        </Button>
+        </button>
       </div>
 
       <CategoriaTable onEdit={handleEdit} />
