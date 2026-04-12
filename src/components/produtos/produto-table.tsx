@@ -82,7 +82,20 @@ export function ProdutoTable({ filters, onEdit }: Props) {
             return (
               <TableRow key={p.id} className={!p.disponivel ? 'opacity-60 bg-zinc-50/50 hover:bg-zinc-50/80' : 'hover:bg-zinc-50/50'}>
                 <TableCell>
-                  <div className="font-semibold text-zinc-900">{p.nome}</div>
+                  <div className="flex items-center gap-3">
+                    {p.imagemUrl ? (
+                      <img
+                        src={p.imagemUrl}
+                        alt={p.nome}
+                        className="w-10 h-10 rounded-lg object-cover shrink-0 border border-zinc-100"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-lg bg-zinc-100 shrink-0 flex items-center justify-center">
+                        <span className="text-[10px] font-black text-zinc-300 uppercase">foto</span>
+                      </div>
+                    )}
+                    <div className="font-semibold text-zinc-900">{p.nome}</div>
+                  </div>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">

@@ -253,7 +253,29 @@ export function ProdutoFormDialog({ open, onOpenChange, produto }: Props) {
 
           <div className="space-y-2">
             <Label htmlFor="imagemUrl">URL da Imagem (opcional)</Label>
-            <Input id="imagemUrl" {...register('imagemUrl')} placeholder="https://..." />
+            <Controller
+              control={control}
+              name="imagemUrl"
+              render={({ field }) => (
+                <div className="flex gap-3 items-start">
+                  <Input
+                    id="imagemUrl"
+                    {...field}
+                    value={field.value ?? ''}
+                    placeholder="https://images.unsplash.com/..."
+                    className="flex-1"
+                  />
+                  {field.value && (
+                    <img
+                      src={field.value}
+                      alt="prévia"
+                      className="w-12 h-12 rounded-lg object-cover shrink-0 border border-zinc-200"
+                      onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+                    />
+                  )}
+                </div>
+              )}
+            />
             {errors.imagemUrl && <p className="text-xs text-red-500">{errors.imagemUrl.message}</p>}
           </div>
 

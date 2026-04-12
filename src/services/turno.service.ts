@@ -36,7 +36,55 @@ export class TurnoService {
     return shift
   }
 
-  async confirmarFechamento(usuarioId: string, contagens: { produtoId: string, qtdFisica: number }[]) {
+  async getResumoCaixa() {
+    const hoje = new Date()
+    hoje.setHours(0, 0, 0, 0)
+
+    const pedidos = await prisma.pedido.findMany({
+      where: {
+        orderStatus: 'PAGO',
+        pagoEm: { gte: hoje }
+      },
+      select: {
+        totalFinal: true,
+        totalCancelado: true,
+        formaPagamento: true
+      }
+    })
+
+    const cancelados = await prisma.pedido.findMany({
+      where: {
+        orderStatus: 'CANCELADO',
+        criadoEm: { gte: hoje }
+      },
+      select: { totalBruto: true }
+    })
+
+    const totalVendas = pedidos.reduce((acc, p) => acc + Number(p.totalFinal ?? 0), 0)
+    const totalDinheiro = pedidos.filter(p => p.formaPagamento === 'DINHEIRO').reduce((acc, p) => acc + Number(p.totalFinal ?? 0), 0)
+    const totalPix = pedidos.filter(p => p.formaPagamento === 'PIX').reduce((acc, p) => acc + Number(p.totalFinal ?? 0), 0)
+    const totalCartaoDebito = pedidos.filter(p => p.formaPagamento === 'CARTAO_DEBITO').reduce((acc, p) => acc + Number(p.totalFinal ?? 0), 0)
+    const totalCartaoCredito = pedidos.filter(p => p.formaPagamento === 'CARTAO_CREDITO').reduce((acc, p) => acc + Number(p.totalFinal ?? 0), 0)
+    const totalCancelados = cancelados.reduce((acc, p) => acc + Number(p.totalBruto ?? 0), 0)
+
+    return {
+      qtdPedidos: pedidos.length,
+      totalVendas,
+      totalDinheiro,
+      totalPix,
+      totalCartaoDebito,
+      totalCartaoCredito,
+      totalCancelados,
+      qtdCancelados: cancelados.length,
+      dataInicio: hoje.toISOString()
+    }
+  }
+
+  async confirmarFechamento(
+    usuarioId: string,
+    contagens: { produtoId: string, qtdFisica: number }[],
+    caixa: { dinheiroFisico: number, observacaoCaixa?: string }
+  ) {
     const status = await this.getStatus()
     if (!status.shiftClosingId) {
       throw new Error('Nenhum fechamento em andamento para confirmar.')
@@ -89,12 +137,26 @@ export class TurnoService {
       // Salva os itens do fechamento
       await this.repository.createShiftItems(status.shiftClosingId!, itemsToRecord, tx)
 
-      // Finaliza o ShiftClosing
+      // Captura resumo do caixa do dia para snapshot histórico
+      const resumo = await this.getResumoCaixa()
+      const divergenciaCaixa = caixa.dinheiroFisico - resumo.totalDinheiro
+
+      // Finaliza o ShiftClosing com dados de caixa
       await tx.shiftClosing.update({
         where: { id: status.shiftClosingId! },
         data: {
           status: 'FINALIZADO',
-          finalizadoEm: new Date()
+          finalizadoEm: new Date(),
+          qtdPedidos: resumo.qtdPedidos,
+          totalVendas: resumo.totalVendas,
+          totalDinheiro: resumo.totalDinheiro,
+          totalPix: resumo.totalPix,
+          totalCartaoDebito: resumo.totalCartaoDebito,
+          totalCartaoCredito: resumo.totalCartaoCredito,
+          totalCancelados: resumo.totalCancelados,
+          dinheiroFisico: caixa.dinheiroFisico,
+          divergenciaCaixa,
+          observacaoCaixa: caixa.observacaoCaixa ?? null
         }
       })
 

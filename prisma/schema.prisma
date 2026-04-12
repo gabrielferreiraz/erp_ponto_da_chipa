@@ -226,6 +226,18 @@ model ShiftClosing {
   status       ShiftStatus        @default(EM_ANDAMENTO)
   itens        ShiftClosingItem[]
 
+  // Resumo de caixa
+  qtdPedidos         Int?
+  totalVendas        Decimal?  @db.Decimal(10, 2)
+  totalDinheiro      Decimal?  @db.Decimal(10, 2)
+  totalPix           Decimal?  @db.Decimal(10, 2)
+  totalCartaoDebito  Decimal?  @db.Decimal(10, 2)
+  totalCartaoCredito Decimal?  @db.Decimal(10, 2)
+  totalCancelados    Decimal?  @db.Decimal(10, 2)
+  dinheiroFisico     Decimal?  @db.Decimal(10, 2)
+  divergenciaCaixa   Decimal?  @db.Decimal(10, 2)
+  observacaoCaixa    String?
+
   @@index([status])
   @@index([iniciadoEm])
   @@map("shift_closings")

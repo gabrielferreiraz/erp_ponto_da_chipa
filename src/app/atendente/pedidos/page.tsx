@@ -539,7 +539,7 @@ export default function PedidosAtendentePage() {
 
       {/* FAB */}
       <div className={cn(
-        "fixed bottom-0 left-0 right-0 z-[40] flex justify-center pb-[calc(max(1.5rem,env(safe-area-inset-bottom)))] px-4 pointer-events-none transition-all duration-500",
+        "fixed bottom-0 left-0 right-0 z-[40] flex justify-center pb-[calc(max(1.5rem,env(safe-area-inset-bottom)))] sm:pb-[calc(max(1.5rem,env(safe-area-inset-bottom)))] px-4 pointer-events-none transition-all duration-500 mb-16 sm:mb-0",
         modalOpen ? "opacity-0 translate-y-10" : "opacity-100 translate-y-0"
       )}>
         <div className="absolute inset-0 bg-gradient-to-t from-[#FAFAFA] via-[#FAFAFA]/60 to-transparent pointer-events-none h-32 bottom-0 top-auto z-[-1] backdrop-blur-[4px] [mask-image:linear-gradient(to_top,black_40%,transparent)]" />

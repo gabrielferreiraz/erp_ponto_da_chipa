@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import {
-  ChefHat,
   LayoutDashboard,
   Package,
   Tags,
@@ -24,6 +23,7 @@ import { logoutAction } from '@/actions/auth'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import Image from 'next/image'
 
 const navItems = [
   { label: 'Dashboard',  href: '/admin/dashboard',  icon: LayoutDashboard },
@@ -83,22 +83,29 @@ export function Sidebar({ user }: SidebarProps) {
         {/* Collapse toggle (desktop only) */}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="hidden lg:flex absolute -right-3 top-24 w-6 h-6 bg-white border border-zinc-200 rounded-full items-center justify-center shadow-sm hover:bg-zinc-50 transition-colors z-50"
+          className="hidden lg:flex absolute -right-3 top-24 w-8 h-24 bg-white border border-zinc-200 rounded-full items-center justify-center shadow-sm hover:bg-zinc-50 transition-colors z-50"
           aria-label={isCollapsed ? 'Expandir menu' : 'Recolher menu'}
         >
           <ChevronLeft className={cn('w-3.5 h-3.5 text-zinc-500 transition-transform duration-300', isCollapsed && 'rotate-180')} />
         </button>
 
         {/* Logo */}
-        <div className={cn('p-8 transition-all duration-300', isCollapsed ? 'px-6' : 'px-8')}>
-          <div className="flex items-center gap-4 group cursor-default overflow-hidden">
-            <div className="bg-gradient-to-br from-[#F29100] via-[#E24A07] to-[#B91C1C] p-3 rounded-2xl shadow-[0_8px_16px_-4px_rgba(226,74,7,0.3),inset_0_1px_0_rgba(255,255,255,0.2)] transition-transform duration-300 group-hover:scale-110 flex-shrink-0">
-              <ChefHat className="w-6 h-6 text-white" strokeWidth={2} />
-            </div>
-            <div className={cn('space-y-0.5 transition-all duration-300', isCollapsed ? 'opacity-0 -translate-x-4 pointer-events-none' : 'opacity-100')}>
-              <h1 className="text-lg font-black tracking-tighter text-zinc-900 leading-none uppercase whitespace-nowrap">Ponto da Chipa</h1>
-              <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] whitespace-nowrap">Administração</p>
-            </div>
+        {/* ↓↓ AJUSTE DE TAMANHO ↓↓
+            Expandido:  altere w-[88px] h-[88px] e width={80} height={80}
+            Recolhido:  altere w-10 h-10 e width={36} height={36}          */}
+        <div className={cn('transition-all duration-300', isCollapsed ? 'px-3 pt-5 pb-3' : 'px-6 pt-6 pb-4')}>
+          <div className={cn(
+            'rounded-3xl bg-white shadow-[0_4px_20px_rgba(0,0,0,0.12)] flex items-center justify-center overflow-hidden border border-zinc-100 transition-all duration-300',
+            isCollapsed ? 'w-20 h-20' : 'w-[188px] h-[108px]'
+          )}>
+            <Image
+              src="/logo.png"
+              alt="Ponto da Chipa"
+              width={isCollapsed ? 70 : 102}
+              height={isCollapsed ? 70 : 102}  
+              className="object-contain"
+              priority
+            />
           </div>
         </div>
 

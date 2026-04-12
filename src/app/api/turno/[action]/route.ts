@@ -5,10 +5,16 @@ import { withSecurity } from '@/lib/with-security'
 
 const service = new TurnoService()
 
-const confirmarFechamentoSchema = z.array(z.object({
-  produtoId: z.string(),
-  qtdFisica: z.number().int().min(0)
-}))
+const confirmarFechamentoSchema = z.object({
+  contagens: z.array(z.object({
+    produtoId: z.string(),
+    qtdFisica: z.number().int().min(0)
+  })),
+  caixa: z.object({
+    dinheiroFisico: z.number().min(0),
+    observacaoCaixa: z.string().optional()
+  })
+})
 
 export const GET = withSecurity(async (request, session) => {
   const url = new URL(request.url)
@@ -18,8 +24,12 @@ export const GET = withSecurity(async (request, session) => {
     return NextResponse.json(await service.getStatus())
   }
 
+  if (action === 'resumo-caixa') {
+    return NextResponse.json(await service.getResumoCaixa())
+  }
+
   return NextResponse.json({ error: 'Ação inválida' }, { status: 400 })
-}, { 
+}, {
   roles: ['ADMIN', 'CAIXA'],
   rateLimit: { limit: 30, windowMs: 60 * 1000 }
 })
@@ -34,8 +44,8 @@ export const POST = withSecurity(async (request, session) => {
     
     case 'confirmar-fechamento': {
       const body = await request.json()
-      const contagens = confirmarFechamentoSchema.parse(body)
-      return NextResponse.json(await service.confirmarFechamento(session.user.id, contagens))
+      const parsed = confirmarFechamentoSchema.parse(body)
+      return NextResponse.json(await service.confirmarFechamento(session.user.id, parsed.contagens, parsed.caixa))
     }
 
     case 'cancelar-fechamento':

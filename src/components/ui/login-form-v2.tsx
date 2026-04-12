@@ -1,6 +1,7 @@
 "use client";
 import { useState, useTransition } from "react";
-import { User, Lock, ArrowRight, ChefHat, AlertCircle, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { User, Lock, ArrowRight, AlertCircle, Eye, EyeOff, Loader2 } from 'lucide-react';
+import Image from 'next/image';
 import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -81,23 +82,27 @@ export function LoginForm() {
     >
       <div className="absolute -inset-4 bg-gradient-to-br from-red-500/20 via-transparent to-zinc-500/10 blur-3xl rounded-[48px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
       
-      <div className="relative p-10 space-y-8 bg-white/90 backdrop-blur-3xl rounded-[32px] border border-white shadow-[0_40px_100px_-20px_rgba(0,0,0,0.25),0_16px_40px_-10px_rgba(0,0,0,0.15)] ring-1 ring-black/[0.03] overflow-hidden group-focus-within:ring-red-500/15 group-focus-within:shadow-[0_60px_120px_-30px_rgba(0,0,0,0.3)]">
-        
+      <div className="relative p-5 space-y-8 bg-white backdrop-blur-3xl rounded-[32px] border border-white shadow-[0_40px_100px_-20px_rgba(0,0,0,0.25),0_16px_40px_-10px_rgba(0,0,0,0.15)] ring-1 ring-black/[0.03] overflow-hidden group-focus-within:ring-red-500/15 group-focus-within:shadow-[0_60px_120px_-30px_rgba(0,0,0,0.3)]">
+
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none" />
 
         <div className="text-center">
-          <motion.div 
-            initial={{ scale: 0.8 }}
-            animate={{ scale: 1 }}
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-            className="flex items-center justify-center gap-3 mb-6"
+            className="flex justify-center mb-4"
           >
-            <div className="bg-red-600 rounded-2xl p-3 shadow-[0_12px_24px_-8px_rgba(220,38,38,0.5),inset_0_1px_0_rgba(255,255,255,0.3)]">
-              <ChefHat className="w-8 h-8 text-white" />
-            </div>
-            <h1 className="text-2xl font-black text-zinc-900 tracking-tighter uppercase">Ponto da Chipa</h1>
+            <Image
+              src="/logo.png"
+              alt="Ponto da Chipa"
+              width={350}
+              height={140}
+              className="object-contain mix-blend-multiply"
+              priority
+            />
           </motion.div>
-          
+
           <h2 className="text-xl font-bold text-zinc-800 tracking-tight">Bem-vindo de volta</h2>
           <p className="mt-1.5 text-[11px] font-bold text-zinc-400 uppercase tracking-widest">Sistema de Gestão Interna</p>
         </div>
