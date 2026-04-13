@@ -186,7 +186,7 @@ export default function PedidosAtendentePage() {
     <div className="min-h-screen bg-[#FAFAFA] p-4 sm:p-6 lg:p-14 max-w-[1600px] mx-auto transition-all duration-200 ease-in-out font-sans overflow-x-hidden pb-40 scroll-smooth">
       
       {/* Header Compacto */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 mt-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 mt-2">
         <div className="flex items-center gap-4">
           <div className="bg-white p-3 rounded-2xl shadow-sm border border-zinc-200/50">
             <ChefHat className="w-8 h-8 text-[#B91C1C]" strokeWidth={1.5} />
@@ -251,7 +251,7 @@ export default function PedidosAtendentePage() {
               className="space-y-6"
             >
               {loadingPedidos && pedidosParaExibir.length === 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {[1, 2, 3].map(i => (
                     <div key={i} className="h-48 bg-white border border-zinc-200/50 rounded-3xl animate-pulse shadow-sm" />
                   ))}

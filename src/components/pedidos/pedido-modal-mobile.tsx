@@ -2,10 +2,9 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { mutate as globalMutate } from 'swr'
-import { Plus, Search, Minus, ShoppingBag, Package, X, MapPin, Clock, Flame } from 'lucide-react'
+import { Plus, Search, Minus, ShoppingBag, X, Flame } from 'lucide-react'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Drawer } from 'vaul'
-import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { useProdutos } from '@/hooks/use-produtos'
 import { usePedidosAtendente } from '@/hooks/use-pedidos-atendente'
@@ -33,7 +32,7 @@ interface CartItem {
 }
 
 export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoModalMobileProps) {
-  const { produtos, isLoading: loadingProdutos } = useProdutos({ status: 'disponivel' })
+  const { produtos } = useProdutos({ status: 'disponivel' })
   const { mesas, isLoading: loadingMesas } = useMesas()
   const { categorias } = useCategorias()
   const { mutate } = usePedidosAtendente()
@@ -594,7 +593,7 @@ export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoMo
   if (isDesktop) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-xl p-0 h-[80vh] overflow-hidden rounded-2xl border-none shadow-2xl">
+        <DialogContent className="max-w-xl md:max-w-2xl lg:max-w-xl p-0 h-[80vh] md:h-[85vh] overflow-hidden rounded-2xl border-none shadow-2xl">
           {renderContent}
         </DialogContent>
       </Dialog>

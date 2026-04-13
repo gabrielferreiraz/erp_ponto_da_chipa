@@ -129,9 +129,9 @@ export default function VisorPage() {
 
       {/* ── Grid ── */}
       {isLoading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-px bg-zinc-200 border border-zinc-200 rounded-2xl overflow-hidden">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-px bg-zinc-200 border border-zinc-200 rounded-2xl overflow-hidden">
           {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="bg-white h-36 animate-pulse" />
+            <div key={i} className="bg-white h-36 md:h-44 animate-pulse" />
           ))}
         </div>
       ) : produtosFiltrados.length === 0 ? (
@@ -139,7 +139,7 @@ export default function VisorPage() {
           <p className="text-sm font-bold text-zinc-300">Nenhum produto</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-px bg-zinc-200 border border-zinc-200 rounded-2xl overflow-hidden">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-px bg-zinc-200 border border-zinc-200 rounded-2xl overflow-hidden">
           {produtosFiltrados.map(p => {
             const semDeposito = p.qtdEstoque === 0
             const isCritico = p.status === 'CRITICO'
@@ -159,7 +159,7 @@ export default function VisorPage() {
               >
                 {/* Imagem — exibida quando disponível */}
                 {p.imagemUrl ? (
-                  <div className="relative w-full h-32 shrink-0 overflow-hidden">
+                  <div className="relative w-full h-32 md:h-40 shrink-0 overflow-hidden">
                     <img
                       src={p.imagemUrl}
                       alt={p.nome}
