@@ -72,7 +72,7 @@ export function Sidebar({ user }: SidebarProps) {
             <UserCircle className="w-4 h-4 text-zinc-400" strokeWidth={1.5} />
           </div>
         </div>
-      </div>>
+      </div>
 
       {/* ── Mobile overlay ── */}
       {isMobileOpen && (
