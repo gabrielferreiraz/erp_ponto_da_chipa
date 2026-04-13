@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge'
 import { useProdutos, ProdutoFrontend, ProdutoFilters } from '@/hooks/use-produtos'
 import { Loader2, Edit2, Ban, CheckCircle, MoreHorizontal } from 'lucide-react'
 import { formatCurrency } from '@/lib/format'
+import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import {
   DropdownMenu,
@@ -89,7 +90,7 @@ export function ProdutoTable({ filters, onEdit }: Props) {
             const hasStockAlert = p.qtdEstoque + p.qtdVisor <= p.estoqueMinimo
             
             return (
-              <TableRow key={p.id} className={!p.disponivel ? 'opacity-60 bg-zinc-50/50 hover:bg-zinc-50/80' : 'hover:bg-zinc-50/50'}>
+              <TableRow key={p.id} className={cn('group', !p.disponivel ? 'opacity-60 bg-zinc-50/50 hover:bg-zinc-50/80' : 'hover:bg-zinc-50/50')}>
                 <TableCell>
                   <div className="flex items-center gap-3">
                     {p.imagemUrl ? (
@@ -143,7 +144,7 @@ export function ProdutoTable({ filters, onEdit }: Props) {
                     <Badge variant="outline" className="bg-zinc-100 text-zinc-600 border-zinc-200">Indisponível</Badge>
                   )}
                 </TableCell>
-                <TableCell className="sticky right-0 bg-white/95 backdrop-blur-sm z-10 border-l border-zinc-100 shadow-[-12px_0_15px_-5px_rgba(0,0,0,0.05)] text-right px-4">
+                <TableCell className="sticky right-0 bg-white group-hover:bg-zinc-50/50 z-10 border-l border-zinc-100 shadow-[-12px_0_15px_-5px_rgba(0,0,0,0.05)] text-right px-4 transition-colors">
                   {/* Desktop Actions */}
                   <div className="hidden sm:flex items-center justify-end gap-1.5">
                     <button
