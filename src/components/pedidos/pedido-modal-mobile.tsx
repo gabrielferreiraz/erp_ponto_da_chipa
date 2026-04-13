@@ -37,6 +37,7 @@ export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoMo
   const { mesas, isLoading: loadingMesas } = useMesas()
   const { categorias } = useCategorias()
   const { mutate } = usePedidosAtendente()
+  const mutateProdutos = () => globalMutate('/api/produtos?status=disponivel')
   const isDesktop = useMediaQuery("(min-width: 768px)")
 
   const [tipo, setTipo] = useState<'LOCAL' | 'VIAGEM'>(pedidoEdicao?.tipo || 'LOCAL')
@@ -96,17 +97,7 @@ export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoMo
       const matchesCategoria = categoriaAtiva === 'all' || p.categoriaId === categoriaAtiva
       return matchesBusca && matchesCategoria
     })
-    .sort((a, b) => {
-      // Prioridade 1: Produtos que já estão no carrinho (o que o cliente já pediu)
-      const aInCart = carrinho.some(item => item.produtoId === a.id)
-      const bInCart = carrinho.some(item => item.produtoId === b.id)
-      
-      if (aInCart && !bInCart) return -1
-      if (!aInCart && bInCart) return 1
-      
-      // Prioridade 2: Top Sellers (volume de vendas)
-      return (b.sales_count || 0) - (a.sales_count || 0)
-    })
+    .sort((a, b) => (b.sales_count || 0) - (a.sales_count || 0))
 
   // Identificar top 2 de cada categoria para o badge
   const top2Ids = new Set<string>()
@@ -196,9 +187,10 @@ export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoMo
           }
           toast.success('Itens adicionados com sucesso!', { id: 'caixa-add' })
         }
-        
+
         mutate()
         globalMutate('/api/caixa/fila')
+        mutateProdutos()
         onOpenChange(false)
         return
       }
@@ -236,8 +228,9 @@ export function PedidoModalMobile({ open, onOpenChange, pedidoEdicao }: PedidoMo
 
       mutate()
       globalMutate('/api/caixa/fila')
+      mutateProdutos()
       onOpenChange(false)
-      
+
       if (!pedidoEdicao) {
          setCarrinho([])
          setTipo('LOCAL')

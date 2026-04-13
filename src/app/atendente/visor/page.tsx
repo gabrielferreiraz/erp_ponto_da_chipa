@@ -238,7 +238,7 @@ export default function VisorPage() {
           className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-[2px]"
           onClick={e => { if (e.target === e.currentTarget) handleFechar() }}
         >
-          <div className="w-full sm:max-w-sm bg-white sm:rounded-2xl rounded-t-3xl overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200">
+          <div className="w-full sm:max-w-sm bg-white sm:rounded-2xl rounded-t-3xl overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200 mb-16 sm:mb-0">
 
             {/* Handle bar — mobile only */}
             <div className="flex justify-center pt-3 pb-1 sm:hidden">

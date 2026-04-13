@@ -37,6 +37,9 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
+# Cria o diretório de cache do Next.js com as permissões corretas
+RUN mkdir -p .next/cache && chown -R nextjs:nodejs .next
+
 # Copia o schema e migrations para o runner
 COPY --from=builder /app/prisma ./prisma
 
@@ -48,6 +51,9 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 # Copia dependências necessárias para o seed em produção
 COPY --from=builder /app/node_modules/bcryptjs ./node_modules/bcryptjs
+
+# Copia sharp para otimização de imagens em standalone
+COPY --from=builder /app/node_modules/sharp ./node_modules/sharp
 
 # Copia e configura o script de inicialização robusto
 COPY --from=builder /app/scripts/start.sh ./start.sh
