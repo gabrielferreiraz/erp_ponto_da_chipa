@@ -5,7 +5,7 @@ import {
   Package, ArrowRightLeft, PlusCircle, MinusCircle,
   TrendingDown, AlertTriangle, Search, X,
   RefreshCw, History, Warehouse, SlidersHorizontal,
-  ShoppingBag, Loader2, ChevronDown
+  ShoppingBag, Loader2, ChevronDown, MoreHorizontal
 } from 'lucide-react'
 import { useEstoque, ProdutoEstoqueFrontend } from '@/hooks/use-estoque'
 import { useMovimentacoes } from '@/hooks/use-movimentacoes'
@@ -17,6 +17,14 @@ import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel
+} from '@/components/ui/dropdown-menu'
 
 type Aba = 'inventario' | 'historico'
 type FiltroStatus = 'TODOS' | 'CRITICO' | 'ALERTA' | 'OK'
@@ -67,9 +75,9 @@ export default function EstoquePage() {
           <h1 className="text-3xl font-black tracking-tighter text-zinc-900 uppercase">Estoque</h1>
           <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-[0.2em]">Visor · Depósito · Movimentações</p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="relative w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400" />
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+          <div className="relative w-full sm:w-64 group">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400 group-focus-within:text-zinc-900 group-focus-within:scale-110 transition-all" />
             <input
               type="text"
               placeholder="Buscar produto ou categoria..."
@@ -87,7 +95,7 @@ export default function EstoquePage() {
             onClick={() => { mutateDash(); mutateMovs() }}
             className="h-10 px-4 flex items-center gap-2 rounded-2xl bg-white border border-zinc-200 text-[12px] font-bold text-zinc-500 hover:bg-zinc-50 transition-all shadow-sm"
           >
-            <RefreshCw className="w-3.5 h-3.5" />
+            <RefreshCw className={cn("w-3.5 h-3.5 transition-all", (isLoading || loadingMovs) && "animate-spin text-zinc-900 opacity-70")} />
             Atualizar
           </button>
         </div>
@@ -207,11 +215,11 @@ export default function EstoquePage() {
       <div>
 
         {/* Tabs */}
-        <div className="flex items-center gap-1 bg-zinc-100 rounded-xl p-1 w-fit mb-6">
+        <div className="flex items-center gap-1 bg-zinc-100 rounded-xl p-1 w-full sm:w-fit mb-6 overflow-x-auto no-scrollbar">
           <button
             onClick={() => setAba('inventario')}
             className={cn(
-              "flex items-center gap-2 px-5 py-2 rounded-lg text-[12px] font-bold transition-all",
+              "shrink-0 flex items-center gap-2 px-5 py-2 rounded-lg text-[12px] font-bold transition-all",
               aba === 'inventario' ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-700"
             )}
           >
@@ -221,7 +229,7 @@ export default function EstoquePage() {
           <button
             onClick={() => setAba('historico')}
             className={cn(
-              "flex items-center gap-2 px-5 py-2 rounded-lg text-[12px] font-bold transition-all",
+              "shrink-0 flex items-center gap-2 px-5 py-2 rounded-lg text-[12px] font-bold transition-all",
               aba === 'historico' ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-700"
             )}
           >
@@ -243,7 +251,7 @@ export default function EstoquePage() {
             <motion.div key="inventario" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
 
               {/* Filtros */}
-              <div className="flex items-center gap-2 mb-4">
+              <div className="flex items-center gap-2 mb-4 overflow-x-auto no-scrollbar max-w-[100vw] sm:max-w-none -mx-4 px-4 sm:mx-0 sm:px-0">
                 {([
                   { key: 'TODOS',   label: 'Todos',   count: dashboard?.produtos.length ?? 0 },
                   { key: 'CRITICO', label: 'Crítico', count: dashboard?.kpis.zerados ?? 0    },
@@ -254,7 +262,7 @@ export default function EstoquePage() {
                     key={f.key}
                     onClick={() => setFiltroStatus(f.key)}
                     className={cn(
-                      "flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all border",
+                      "shrink-0 flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all border",
                       filtroStatus === f.key
                         ? f.key === 'CRITICO' ? "bg-rose-600 text-white border-rose-600"
                           : f.key === 'ALERTA' ? "bg-amber-500 text-white border-amber-500"
@@ -277,15 +285,17 @@ export default function EstoquePage() {
               </div>
 
               {/* Tabela */}
-              <div className="bg-white rounded-2xl border border-zinc-200/60 overflow-hidden">
-                <div className="grid grid-cols-[1fr_140px_72px_184px_80px_64px_232px] px-5 h-11 items-center border-b border-zinc-100 bg-zinc-50/60">
+              <div className="bg-white rounded-2xl border border-zinc-200/60 overflow-x-auto no-scrollbar">
+                <div className="min-w-[750px] sm:min-w-[900px] grid grid-cols-[1fr_140px_72px_184px_80px_64px_80px] sm:grid-cols-[1fr_140px_72px_184px_80px_64px_232px] pl-5 h-11 items-center border-b border-zinc-100 bg-zinc-50/60">
                   <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Produto</span>
                   <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Categoria</span>
                   <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest text-center">Visor</span>
                   <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest text-center pl-3">Nível</span>
                   <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest text-center">Depósito</span>
                   <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest text-center">Mín.</span>
-                  <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest text-right pr-1">Ações</span>
+                  <div className="sticky right-0 bg-zinc-50/90 backdrop-blur-sm z-10 shadow-[-12px_0_15px_-5px_rgba(0,0,0,0.05)] w-full h-full flex items-center justify-end pr-5 border-l border-zinc-100">
+                    <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Ações</span>
+                  </div>
                 </div>
 
                 {isLoading ? (
@@ -293,9 +303,11 @@ export default function EstoquePage() {
                     <div key={i} className="h-14 border-b border-zinc-50 last:border-0 bg-zinc-50/30 animate-pulse" />
                   ))
                 ) : produtosFiltrados.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-20 gap-3">
-                    <Package className="w-8 h-8 text-zinc-200" />
-                    <p className="text-sm font-bold text-zinc-400">Nenhum produto encontrado</p>
+                  <div className="flex flex-col items-center justify-center py-24 pb-28">
+                    <div className="w-16 h-16 bg-zinc-50 rounded-full flex items-center justify-center mb-4 shadow-inner">
+                      <Package className="w-8 h-8 text-zinc-300" />
+                    </div>
+                    <p className="text-[13px] font-bold text-zinc-400">Nenhum produto encontrado</p>
                   </div>
                 ) : produtosFiltrados.map(p => {
                   const pct = p.estoqueMinimo > 0
@@ -308,11 +320,11 @@ export default function EstoquePage() {
                     <div
                       key={p.id}
                       className={cn(
-                        "grid grid-cols-[1fr_140px_72px_184px_80px_64px_232px] px-5 h-14 items-center border-b border-zinc-50 last:border-0 transition-colors",
+                        "group min-w-[750px] sm:min-w-[900px] grid grid-cols-[1fr_140px_72px_184px_80px_64px_80px] sm:grid-cols-[1fr_140px_72px_184px_80px_64px_232px] h-14 items-center border-b border-zinc-50 last:border-0 transition-colors",
                         rowHover
                       )}
                     >
-                      <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex items-center gap-3 min-w-0 pl-5">
                         <div className="w-1 h-8 rounded-full shrink-0" style={{ backgroundColor: barColor }} />
                         <span className="font-bold text-zinc-900 text-[13px] truncate">{p.nome}</span>
                       </div>
@@ -348,37 +360,55 @@ export default function EstoquePage() {
                         <span className="text-sm font-bold text-zinc-300 tabular-nums">{p.estoqueMinimo}</span>
                       </div>
 
-                      <div className="flex items-center justify-end gap-1.5">
-                        <button
-                          onClick={() => setSelRepo(p)}
-                          title="Repor Visor"
-                          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 text-[11px] font-bold transition-all whitespace-nowrap"
-                        >
-                          <ArrowRightLeft className="w-3.5 h-3.5 shrink-0" />
-                          Repor
-                        </button>
-                        <button
-                          onClick={() => setSelEntrada(p)}
-                          title="Entrada no Depósito"
-                          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-[11px] font-bold transition-all whitespace-nowrap"
-                        >
-                          <PlusCircle className="w-3.5 h-3.5 shrink-0" />
-                          Entrada
-                        </button>
-                        <button
-                          onClick={() => setSelAjuste(p)}
-                          title="Ajuste Manual"
-                          className="w-8 h-8 flex items-center justify-center rounded-xl bg-violet-50 text-violet-700 hover:bg-violet-100 transition-all"
-                        >
-                          <SlidersHorizontal className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => setSelPerda(p)}
-                          title="Registrar Perda"
-                          className="w-8 h-8 flex items-center justify-center rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 transition-all"
-                        >
-                          <MinusCircle className="w-3.5 h-3.5" />
-                        </button>
+                      <div className="flex items-center justify-end gap-1.5 h-full sticky right-0 bg-white group-hover:bg-zinc-50/50 backdrop-blur-sm z-10 shadow-[-12px_0_15px_-5px_rgba(0,0,0,0.05)] border-l border-zinc-50 px-5 transition-colors">
+                        
+                        {/* Ações Desktop */}
+                        <div className="hidden sm:flex items-center gap-1.5">
+                          <button onClick={() => setSelRepo(p)} title="Repor Visor" className="w-8 h-8 flex items-center justify-center rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 transition-all hover:scale-110 active:scale-95">
+                            <ArrowRightLeft className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => setSelEntrada(p)} title="Entrada no Depósito" className="w-8 h-8 flex items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-all hover:scale-110 active:scale-95">
+                            <PlusCircle className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => setSelAjuste(p)} title="Ajuste Manual" className="w-8 h-8 flex items-center justify-center rounded-xl bg-violet-50 text-violet-600 hover:bg-violet-100 transition-all hover:scale-110 active:scale-95">
+                            <SlidersHorizontal className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => setSelPerda(p)} title="Registrar Perda" className="w-8 h-8 flex items-center justify-center rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 transition-all hover:scale-110 active:scale-95">
+                            <MinusCircle className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        {/* Dropdown Sanduíche Mobile */}
+                        <div className="sm:hidden">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button className="w-8 h-8 flex items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-all active:scale-95">
+                                <MoreHorizontal className="w-4 h-4" />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-56 rounded-2xl p-2 shadow-2xl border-zinc-100">
+                              <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Ações de Estoque</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => setSelRepo(p)} className="flex items-center gap-3 cursor-pointer rounded-xl font-bold text-blue-700 py-3 focus:bg-blue-50 transition-colors">
+                                <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center"><ArrowRightLeft className="w-3.5 h-3.5" /></div>
+                                Repor Visor
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setSelEntrada(p)} className="flex items-center gap-3 cursor-pointer rounded-xl font-bold text-emerald-700 py-3 focus:bg-emerald-50 transition-colors">
+                                <div className="w-7 h-7 rounded-lg bg-emerald-100 flex items-center justify-center"><PlusCircle className="w-3.5 h-3.5" /></div>
+                                Adicionar
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setSelAjuste(p)} className="flex items-center gap-3 cursor-pointer rounded-xl font-bold text-violet-700 py-3 focus:bg-violet-50 transition-colors">
+                                <div className="w-7 h-7 rounded-lg bg-violet-100 flex items-center justify-center"><SlidersHorizontal className="w-3.5 h-3.5" /></div>
+                                Ajustar
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => setSelPerda(p)} className="flex items-center gap-3 cursor-pointer rounded-xl font-bold text-rose-600 py-3 focus:bg-rose-50 transition-colors">
+                                <div className="w-7 h-7 rounded-lg bg-rose-100 flex items-center justify-center"><MinusCircle className="w-3.5 h-3.5" /></div>
+                                Registrar Perda
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </div>
                     </div>
                   )
@@ -390,8 +420,8 @@ export default function EstoquePage() {
           {/* ── MOVIMENTAÇÕES ── */}
           {aba === 'historico' && (
             <motion.div key="historico" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <div className="bg-white rounded-2xl border border-zinc-200/60 overflow-hidden">
-                <div className="grid grid-cols-[150px_145px_1fr_72px_120px_1fr] px-6 h-11 items-center border-b border-zinc-100 bg-zinc-50/60">
+              <div className="bg-white rounded-2xl border border-zinc-200/60 overflow-x-auto no-scrollbar">
+                <div className="min-w-[800px] grid grid-cols-[150px_145px_1fr_72px_120px_1fr] px-6 h-11 items-center border-b border-zinc-100 bg-zinc-50/60">
                   <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Data / Hora</span>
                   <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Tipo</span>
                   <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Produto</span>
@@ -406,16 +436,18 @@ export default function EstoquePage() {
                       <div key={i} className="h-12 animate-pulse bg-zinc-50/40" />
                     ))
                   ) : movimentacoes.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-20 gap-3">
-                      <History className="w-8 h-8 text-zinc-200" />
-                      <p className="text-sm font-bold text-zinc-400">Nenhuma movimentação registrada.</p>
+                    <div className="flex flex-col items-center justify-center py-24 pb-28">
+                      <div className="w-16 h-16 bg-zinc-50 rounded-full flex items-center justify-center mb-4 shadow-inner">
+                        <History className="w-8 h-8 text-zinc-300" />
+                      </div>
+                      <p className="text-[13px] font-bold text-zinc-400">Nenhuma movimentação registrada.</p>
                     </div>
                   ) : movimentacoes.map(m => {
                     const cfg = TIPO_CONFIG[m.tipo] ?? { label: m.tipo, color: 'text-zinc-600', bg: 'bg-zinc-100' }
                     return (
                       <div
                         key={m.id}
-                        className="grid grid-cols-[150px_145px_1fr_72px_120px_1fr] px-6 h-12 items-center hover:bg-zinc-50 transition-colors"
+                        className="min-w-[800px] grid grid-cols-[150px_145px_1fr_72px_120px_1fr] px-6 h-12 items-center hover:bg-zinc-50 transition-colors"
                       >
                         <span className="text-[12px] font-bold text-zinc-500 tabular-nums">
                           {format(new Date(m.criadoEm), "dd/MM/yy HH:mm", { locale: ptBR })}

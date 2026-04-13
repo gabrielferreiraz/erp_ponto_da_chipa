@@ -10,9 +10,17 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { useProdutos, ProdutoFrontend, ProdutoFilters } from '@/hooks/use-produtos'
-import { Loader2, Edit2, Ban, CheckCircle } from 'lucide-react'
+import { Loader2, Edit2, Ban, CheckCircle, MoreHorizontal } from 'lucide-react'
 import { formatCurrency } from '@/lib/format'
 import { toast } from 'sonner'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel
+} from '@/components/ui/dropdown-menu'
 
 interface Props {
   filters: ProdutoFilters
@@ -63,8 +71,9 @@ export function ProdutoTable({ filters, onEdit }: Props) {
   }
 
   return (
-    <div className="bg-white rounded-xl border border-zinc-200 overflow-hidden shadow-sm">
-      <Table>
+    <div className="bg-white rounded-xl border border-zinc-200 overflow-x-auto no-scrollbar shadow-sm">
+      <div className="min-w-[800px]">
+        <Table>
         <TableHeader className="bg-zinc-50">
           <TableRow>
             <TableHead>Produto</TableHead>
@@ -72,7 +81,7 @@ export function ProdutoTable({ filters, onEdit }: Props) {
             <TableHead>Estoque / Visor</TableHead>
             <TableHead className="text-right">Preço</TableHead>
             <TableHead className="text-center">Status</TableHead>
-            <TableHead className="w-[160px] text-right">Ações</TableHead>
+            <TableHead className="w-[80px] sm:w-[160px] text-right sticky right-0 bg-zinc-50 z-10 shadow-[-12px_0_15px_-5px_rgba(0,0,0,0.05)] border-l border-zinc-100">Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -134,29 +143,51 @@ export function ProdutoTable({ filters, onEdit }: Props) {
                     <Badge variant="outline" className="bg-zinc-100 text-zinc-600 border-zinc-200">Indisponível</Badge>
                   )}
                 </TableCell>
-                <TableCell>
-                  <div className="flex items-center justify-end gap-1">
+                <TableCell className="sticky right-0 bg-white/95 backdrop-blur-sm z-10 border-l border-zinc-100 shadow-[-12px_0_15px_-5px_rgba(0,0,0,0.05)] text-right px-4">
+                  {/* Desktop Actions */}
+                  <div className="hidden sm:flex items-center justify-end gap-1.5">
                     <button
                       onClick={() => onEdit(p)}
                       title="Editar produto"
-                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition-colors text-xs font-semibold"
+                      className="w-8 h-8 flex items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200 transition-all hover:scale-110 active:scale-95"
                     >
-                      <Edit2 className="w-3.5 h-3.5" />
-                      Editar
+                      <Edit2 className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => handleToggleStatus(p.id, p.disponivel)}
                       title={p.disponivel ? 'Desativar produto' : 'Reativar produto'}
-                      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-colors text-xs font-semibold ${
+                      className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all hover:scale-110 active:scale-95 ${
                         p.disponivel
-                          ? 'text-red-500 hover:bg-red-50'
-                          : 'text-emerald-600 hover:bg-emerald-50'
+                          ? 'bg-rose-50 text-rose-500 hover:bg-rose-100'
+                          : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
                       }`}
                     >
-                      {p.disponivel
-                        ? <><Ban className="w-3.5 h-3.5" />Desativar</>
-                        : <><CheckCircle className="w-3.5 h-3.5" />Reativar</>}
+                      {p.disponivel ? <Ban className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
                     </button>
+                  </div>
+                  {/* Mobile Dropdown Sandwich Menu */}
+                  <div className="sm:hidden flex justify-end">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="w-8 h-8 flex items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-all active:scale-95">
+                          <MoreHorizontal className="w-4 h-4" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48 rounded-2xl p-2 shadow-2xl border-zinc-100">
+                        <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Opções</DropdownMenuLabel>
+                        <DropdownMenuSeparator className="bg-zinc-100" />
+                        <DropdownMenuItem onClick={() => onEdit(p)} className="flex items-center gap-3 cursor-pointer rounded-xl font-bold text-zinc-700 py-3 focus:bg-zinc-100 transition-colors">
+                          <div className="w-7 h-7 rounded-lg bg-zinc-100 flex items-center justify-center"><Edit2 className="w-3.5 h-3.5 text-zinc-600" /></div>
+                          Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleToggleStatus(p.id, p.disponivel)} className={`flex items-center gap-3 cursor-pointer rounded-xl font-bold py-3 transition-colors ${p.disponivel ? 'text-rose-600 focus:bg-rose-50' : 'text-emerald-700 focus:bg-emerald-50'}`}>
+                          <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${p.disponivel ? 'bg-rose-100' : 'bg-emerald-100'}`}>
+                            {p.disponivel ? <Ban className="w-3.5 h-3.5 text-rose-600" /> : <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />}
+                          </div>
+                          {p.disponivel ? 'Desativar' : 'Reativar'}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </TableCell>
               </TableRow>
@@ -164,6 +195,7 @@ export function ProdutoTable({ filters, onEdit }: Props) {
           })}
         </TableBody>
       </Table>
+      </div>
     </div>
   )
 }

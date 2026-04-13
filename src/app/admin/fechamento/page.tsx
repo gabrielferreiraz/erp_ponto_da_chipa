@@ -49,6 +49,7 @@ export default function FechamentoPage() {
   const [showObservacao, setShowObservacao] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [showCancelModal, setShowCancelModal] = useState(false)
   const [secaoAberta, setSecaoAberta] = useState<'caixa' | 'produtos'>('caixa')
 
   useEffect(() => {
@@ -77,12 +78,12 @@ export default function FechamentoPage() {
   }
 
   const handleCancelar = async () => {
-    if (!confirm('Cancelar o fechamento em andamento?')) return
     try {
       setIsSubmitting(true)
       await fetch('/api/turno/cancelar-fechamento', { method: 'POST' })
       toast.info('Fechamento cancelado.')
       mutateStatus()
+      setShowCancelModal(false)
     } catch (error: any) {
       toast.error('Erro ao cancelar')
     } finally {
@@ -171,7 +172,7 @@ export default function FechamentoPage() {
         ) : (
           <div className="flex gap-3">
             <button
-              onClick={handleCancelar}
+              onClick={() => setShowCancelModal(true)}
               disabled={isSubmitting}
               className="flex items-center gap-2 h-11 px-5 rounded-2xl bg-white border border-zinc-200 text-zinc-500 text-[11px] font-black uppercase tracking-widest hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 transition-all active:scale-95"
             >
@@ -215,7 +216,7 @@ export default function FechamentoPage() {
               <div className="border-t border-zinc-100">
                 {loadingResumo ? (
                   <div className="p-8 space-y-3">
-                    {[1,2,3].map(i => <Skeleton key={i} className="h-14 w-full rounded-2xl" />)}
+                    {[1, 2, 3].map(i => <Skeleton key={i} className="h-14 w-full rounded-2xl" />)}
                   </div>
                 ) : resumo ? (
                   <div className="p-8 space-y-6">
@@ -289,8 +290,8 @@ export default function FechamentoPage() {
                             divergenciaCaixa === 0
                               ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
                               : divergenciaCaixa > 0
-                              ? "bg-blue-50 text-blue-700 border border-blue-100"
-                              : "bg-rose-50 text-rose-700 border border-rose-100"
+                                ? "bg-blue-50 text-blue-700 border border-blue-100"
+                                : "bg-rose-50 text-rose-700 border border-rose-100"
                           )}>
                             <TrendingDown className="w-3 h-3" />
                             {divergenciaCaixa === 0 ? 'Caixa OK' : `Diferença: ${fmt(Math.abs(divergenciaCaixa))} ${divergenciaCaixa > 0 ? 'a mais' : 'a menos'}`}
@@ -363,7 +364,7 @@ export default function FechamentoPage() {
               <div className="border-t border-zinc-100">
                 {loadingEstoque ? (
                   <div className="p-8 space-y-2">
-                    {[1,2,3,4].map(i => <Skeleton key={i} className="h-16 w-full rounded-2xl" />)}
+                    {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-16 w-full rounded-2xl" />)}
                   </div>
                 ) : (
                   <div>
@@ -464,8 +465,8 @@ export default function FechamentoPage() {
                 <div className={cn(
                   "p-4 rounded-2xl border",
                   divergenciaCaixa === 0 ? "bg-emerald-50 border-emerald-100"
-                  : divergenciaCaixa > 0 ? "bg-blue-50 border-blue-100"
-                  : "bg-rose-50 border-rose-100"
+                    : divergenciaCaixa > 0 ? "bg-blue-50 border-blue-100"
+                      : "bg-rose-50 border-rose-100"
                 )}>
                   <span className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">Dif. Dinheiro</span>
                   <span className={cn(
@@ -506,18 +507,62 @@ export default function FechamentoPage() {
           <DialogFooter className="p-8 pt-0 bg-white gap-3 flex-col sm:flex-row">
             <button
               onClick={() => setShowConfirmModal(false)}
-              className="flex-1 h-12 rounded-2xl border border-zinc-200 text-zinc-500 text-[11px] font-black uppercase tracking-widest hover:bg-zinc-50 transition-all"
+              className="flex-1 min-h-[56px] shrink-0 rounded-2xl border border-zinc-200 text-zinc-500 text-[11px] font-black uppercase tracking-widest hover:bg-zinc-50 transition-all"
             >
               Voltar e Revisar
             </button>
             <button
               onClick={handleConfirmarFinal}
               disabled={isSubmitting}
-              className="flex-1 h-12 rounded-2xl bg-zinc-900 hover:bg-zinc-800 text-white text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
+              className="flex-1 min-h-[56px] shrink-0 rounded-2xl bg-zinc-900 hover:bg-zinc-800 text-white text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
             >
               {isSubmitting
                 ? <Loader2 className="w-4 h-4 animate-spin" />
                 : <><span>Confirmar</span><ArrowRight className="w-4 h-4" /></>
+              }
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Modal de Cancelamento ── */}
+      <Dialog open={showCancelModal} onOpenChange={setShowCancelModal}>
+        <DialogContent className="sm:max-w-[420px] rounded-3xl border-none shadow-2xl p-0 overflow-hidden">
+          <DialogHeader className="p-8 bg-zinc-900 text-white">
+            <DialogTitle className="text-2xl font-black flex items-center gap-3">
+              <XCircle className="w-6 h-6 text-rose-400" />
+              Cancelar Fechamento
+            </DialogTitle>
+            <DialogDescription className="text-zinc-400 font-medium pt-2 text-sm">
+              Tem certeza que deseja interromper este processo?
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="p-8 pb-6 bg-white space-y-4 text-center">
+            <div className="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertCircle className="w-8 h-8 text-rose-500" />
+            </div>
+            <p className="text-zinc-600 font-medium text-sm leading-relaxed">
+              O turno continuará aberto para novas vendas e as contagens parciais de estoque e caixa <strong className="text-rose-600">serão descartadas</strong>.
+            </p>
+          </div>
+
+          <DialogFooter className="p-8 pt-0 bg-white gap-3 flex-col sm:flex-row">
+            <button
+              onClick={() => setShowCancelModal(false)}
+              disabled={isSubmitting}
+              className="flex-1 min-h-[56px] shrink-0 rounded-2xl border border-zinc-200 text-zinc-500 text-[11px] font-black uppercase tracking-widest hover:bg-zinc-50 transition-all"
+            >
+              Voltar
+            </button>
+            <button
+              onClick={handleCancelar}
+              disabled={isSubmitting}
+              className="flex-1 min-h-[56px] shrink-0 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
+            >
+              {isSubmitting
+                ? <Loader2 className="w-4 h-4 animate-spin" />
+                : <><span>Descartar Validação</span></>
               }
             </button>
           </DialogFooter>

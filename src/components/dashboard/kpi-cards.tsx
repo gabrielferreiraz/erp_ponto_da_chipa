@@ -35,9 +35,9 @@ export function KPICards() {
 
   if (isLoading) {
     return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-3 xl:grid-cols-6">
         {[...Array(6)].map((_, i) => (
-          <Skeleton key={i} className="h-[140px] rounded-3xl" />
+          <Skeleton key={i} className="h-[120px] sm:h-[140px] rounded-3xl" />
         ))}
       </div>
     )
@@ -45,7 +45,7 @@ export function KPICards() {
 
   return (
     <TooltipProvider>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-3 xl:grid-cols-6">
         <KPICard 
           title="Faturamento"
           value={formatCurrency(data?.totalFaturado || 0)}
@@ -115,9 +115,9 @@ function KPICard({ title, value, subtitle, icon, color, info }: KPICardProps) {
   }
 
   return (
-    <Card className="group relative border-none shadow-[0_2px_8px_-2px_rgba(0,0,0,0.02),0_12px_24px_-4px_rgba(0,0,0,0.02)] bg-white rounded-[24px] overflow-hidden transition-all duration-300 hover:translate-y-[-2px] hover:shadow-[0_4px_12px_-4px_rgba(0,0,0,0.05),0_20px_40px_-8px_rgba(0,0,0,0.04)] ring-1 ring-zinc-950/[0.03]">
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between mb-4">
+    <Card className="group relative border-none shadow-[0_2px_8px_-2px_rgba(0,0,0,0.02),0_12px_24px_-4px_rgba(0,0,0,0.02)] bg-white rounded-[20px] sm:rounded-[24px] overflow-hidden transition-all duration-300 hover:translate-y-[-2px] hover:shadow-[0_4px_12px_-4px_rgba(0,0,0,0.05),0_20px_40px_-8px_rgba(0,0,0,0.04)] ring-1 ring-zinc-950/[0.03]">
+      <CardContent className="p-4 sm:p-6 flex flex-col justify-between h-full min-h-[120px] sm:min-h-[140px]">
+        <div className="flex items-start sm:items-center justify-between mb-3 sm:mb-4">
           <div className={cn("p-2.5 rounded-xl border transition-colors", colors[color])}>
             {icon}
           </div>
@@ -133,9 +133,9 @@ function KPICard({ title, value, subtitle, icon, color, info }: KPICardProps) {
           </Tooltip>
         </div>
 
-        <div className="space-y-1">
-          <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">{title}</p>
-          <h3 className="text-2xl font-black text-zinc-900 tracking-tight">{value}</h3>
+        <div className="space-y-0.5 sm:space-y-1 mt-auto">
+          <p className="text-[9px] sm:text-[10px] font-black text-zinc-400 uppercase tracking-widest truncate max-w-[full]">{title}</p>
+          <h3 className="text-xl sm:text-2xl font-black text-zinc-900 tracking-tight truncate">{value}</h3>
           {subtitle && (
             <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-tighter opacity-80">{subtitle}</p>
           )}

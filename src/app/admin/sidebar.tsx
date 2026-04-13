@@ -26,12 +26,12 @@ import { usePathname } from 'next/navigation'
 import Image from 'next/image'
 
 const navItems = [
-  { label: 'Dashboard',  href: '/admin/dashboard',  icon: LayoutDashboard },
-  { label: 'Produtos',   href: '/admin/produtos',   icon: Package },
+  { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
+  { label: 'Produtos', href: '/admin/produtos', icon: Package },
   { label: 'Categorias', href: '/admin/categorias', icon: Tags },
-  { label: 'Mesas',      href: '/admin/mesas',      icon: Table2 },
-  { label: 'Usuários',   href: '/admin/usuarios',   icon: Users2 },
-  { label: 'Estoque',    href: '/admin/estoque',    icon: ClipboardList },
+  { label: 'Mesas', href: '/admin/mesas', icon: Table2 },
+  { label: 'Usuários', href: '/admin/usuarios', icon: Users2 },
+  { label: 'Estoque', href: '/admin/estoque', icon: ClipboardList },
   { label: 'Fechamento', href: '/admin/fechamento', icon: History },
 ]
 
@@ -48,19 +48,36 @@ export function Sidebar({ user }: SidebarProps) {
 
   return (
     <>
-      {/* ── Mobile toggle (FAB) ── */}
-      <button
-        onClick={() => setIsMobileOpen(!isMobileOpen)}
-        className="lg:hidden fixed bottom-6 right-6 z-50 p-4 bg-[#E24A07] text-white rounded-full shadow-2xl active:scale-95 transition-transform"
-        aria-label={isMobileOpen ? 'Fechar menu' : 'Abrir menu'}
-      >
-        {isMobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-      </button>
+      {/* ── Mobile Top Bar (PWA safe) ── */}
+      <div className="lg:hidden flex items-center justify-between fixed top-0 inset-x-0 z-40 bg-white/90 backdrop-blur-xl border-b border-zinc-200/60 pt-[env(safe-area-inset-top)] h-[calc(4rem+env(safe-area-inset-top))] px-4 shadow-[0_4px_24px_rgba(0,0,0,0.02)]">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsMobileOpen(!isMobileOpen)}
+            className="p-2 -ml-2 rounded-xl text-zinc-600 hover:bg-zinc-100/80 active:bg-zinc-200/80 transition-colors"
+            aria-label={isMobileOpen ? 'Fechar menu' : 'Abrir menu'}
+          >
+            <Menu className="w-[22px] h-[22px]" strokeWidth={2.5} />
+          </button>
+          <div className="w-14 h-14 rounded-[14px] bg-white shadow-sm border border-zinc-100 flex items-center justify-center overflow-hidden">
+            <Image src="/logo.png" alt="Logo" width={48} height={48} className="object-contain" priority />
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <div className="text-right mr-1">
+            <p className="text-[11px] font-bold text-zinc-900 leading-none">{user.nome.split(' ')[0]}</p>
+            <p className="text-[9px] font-bold text-[#E24A07] uppercase tracking-widest mt-0.5">Admin</p>
+          </div>
+          <div className="w-8 h-8 flex-shrink-0 rounded-full bg-zinc-50 border border-zinc-200/60 shadow-inner flex items-center justify-center">
+            <UserCircle className="w-4 h-4 text-zinc-400" strokeWidth={1.5} />
+          </div>
+        </div>
+      </div>>
 
       {/* ── Mobile overlay ── */}
       {isMobileOpen && (
         <div
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden"
+          className="fixed inset-0 bg-zinc-950/40 backdrop-blur-sm z-[45] lg:hidden transition-all duration-300"
           onClick={() => setIsMobileOpen(false)}
         />
       )}
@@ -69,7 +86,7 @@ export function Sidebar({ user }: SidebarProps) {
       <aside
         className={cn(
           // base
-          'bg-white border-r border-zinc-200/60 flex flex-col flex-shrink-0 z-40',
+          'bg-white border-r border-zinc-200/60 flex flex-col flex-shrink-0 z-50',
           'shadow-[4px_0_24px_rgba(0,0,0,0.02)] transition-all duration-300 ease-in-out',
           // desktop: sticky, full viewport height
           'lg:sticky lg:top-0 lg:h-screen',
@@ -93,16 +110,26 @@ export function Sidebar({ user }: SidebarProps) {
         {/* ↓↓ AJUSTE DE TAMANHO ↓↓
             Expandido:  altere w-[88px] h-[88px] e width={80} height={80}
             Recolhido:  altere w-10 h-10 e width={36} height={36}          */}
-        <div className={cn('transition-all duration-300', isCollapsed ? 'px-3 pt-5 pb-3' : 'px-6 pt-6 pb-4')}>
+        <div className={cn('block transition-all duration-300', isCollapsed ? 'px-3 pt-5 pb-3' : 'px-6 pt-6 pb-4')}>
+          <div className="flex items-center justify-between mb-4 lg:hidden">
+            <span className="text-xs font-black uppercase text-zinc-400 tracking-widest pl-1">Menu</span>
+            <button
+              onClick={() => setIsMobileOpen(false)}
+              className="p-2 -mr-2 rounded-xl text-zinc-400 hover:bg-zinc-100 active:bg-zinc-200 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
           <div className={cn(
-            'rounded-3xl bg-white shadow-[0_4px_20px_rgba(0,0,0,0.12)] flex items-center justify-center overflow-hidden border border-zinc-100 transition-all duration-300',
+            'hidden lg:flex rounded-3xl bg-white shadow-[0_4px_20px_rgba(0,0,0,0.12)] items-center justify-center overflow-hidden border border-zinc-100 transition-all duration-300',
             isCollapsed ? 'w-20 h-20' : 'w-[188px] h-[108px]'
           )}>
             <Image
               src="/logo.png"
               alt="Ponto da Chipa"
               width={isCollapsed ? 70 : 102}
-              height={isCollapsed ? 70 : 102}  
+              height={isCollapsed ? 70 : 102}
               className="object-contain"
               priority
             />

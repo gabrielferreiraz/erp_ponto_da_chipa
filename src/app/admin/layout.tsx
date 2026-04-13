@@ -22,8 +22,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 relative">
-        {/* Top Header Bar */}
-        <header className="h-20 bg-white/80 backdrop-blur-md border-b border-zinc-200/50 flex items-center justify-between px-6 lg:px-10 sticky top-0 z-20">
+        {/* Top Header Bar (Desktop Only) */}
+        <header className="h-20 bg-white/80 backdrop-blur-md border-b border-zinc-200/50 hidden lg:flex items-center justify-between px-6 lg:px-10 sticky top-0 z-20">
           <div className="flex items-center gap-2">
             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]" />
             <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest">Sistema Ativo</span>
@@ -38,7 +38,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-6 lg:p-10 no-scrollbar">
+        {/* Mobile: Adiciona padding-top para não colidir com o Mobile Top Bar fixo */}
+        <main className="flex-1 overflow-y-auto p-4 pt-[calc(4rem+env(safe-area-inset-top)+1.5rem)] lg:p-10 lg:pt-10 no-scrollbar">
           <div className="mx-auto max-w-[1400px]">
             {children}
           </div>
