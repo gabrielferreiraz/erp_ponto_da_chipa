@@ -199,7 +199,7 @@ export default function FilaCaixaPage() {
     try {
       setIsProcessing(pedido.id)
       if (pedido.orderStatus === 'ABERTO') {
-        const res = await fetch(`/api/pedidos/${pedido.id}/confirmar`, { method: 'POST' })
+        const res = await fetch(`/api/pedidos/${pedido.id}/confirmar`, { method: 'PATCH' })
         if (!res.ok) {
           const err = await res.json()
           throw new Error(err.error || 'Erro ao confirmar pedido')
