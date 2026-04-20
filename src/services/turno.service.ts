@@ -59,6 +59,10 @@ export class TurnoService {
       },
       select: { totalBruto: true }
     })
+    
+    const movimentacoesCaixa = await prisma.caixaMovimentacao.findMany({
+      where: { criadoEm: { gte: hoje } }
+    })
 
     const totalVendas = pedidos.reduce((acc, p) => acc + Number(p.totalFinal ?? 0), 0)
     const totalDinheiro = pedidos.filter(p => p.formaPagamento === 'DINHEIRO').reduce((acc, p) => acc + Number(p.totalFinal ?? 0), 0)
@@ -66,6 +70,12 @@ export class TurnoService {
     const totalCartaoDebito = pedidos.filter(p => p.formaPagamento === 'CARTAO_DEBITO').reduce((acc, p) => acc + Number(p.totalFinal ?? 0), 0)
     const totalCartaoCredito = pedidos.filter(p => p.formaPagamento === 'CARTAO_CREDITO').reduce((acc, p) => acc + Number(p.totalFinal ?? 0), 0)
     const totalCancelados = cancelados.reduce((acc, p) => acc + Number(p.totalBruto ?? 0), 0)
+
+    const fundoCaixa = movimentacoesCaixa.filter(m => m.tipo === 'FUNDO_INICIAL').reduce((acc, m) => acc + Number(m.valor), 0)
+    const totalSangrias = movimentacoesCaixa.filter(m => m.tipo === 'SANGRIA').reduce((acc, m) => acc + Number(m.valor), 0)
+    const totalSuprimentos = movimentacoesCaixa.filter(m => m.tipo === 'SUPRIMENTO').reduce((acc, m) => acc + Number(m.valor), 0)
+
+    const totalEsperadoCaixa = fundoCaixa + totalDinheiro + totalSuprimentos - totalSangrias
 
     return {
       qtdPedidos: pedidos.length,
@@ -76,6 +86,10 @@ export class TurnoService {
       totalCartaoCredito,
       totalCancelados,
       qtdCancelados: cancelados.length,
+      fundoCaixa,
+      totalSangrias,
+      totalSuprimentos,
+      totalEsperadoCaixa,
       dataInicio: hoje.toISOString()
     }
   }
@@ -139,7 +153,7 @@ export class TurnoService {
 
       // Captura resumo do caixa do dia para snapshot histórico
       const resumo = await this.getResumoCaixa()
-      const divergenciaCaixa = caixa.dinheiroFisico - resumo.totalDinheiro
+      const divergenciaCaixa = caixa.dinheiroFisico - resumo.totalEsperadoCaixa
 
       // Finaliza o ShiftClosing com dados de caixa
       await tx.shiftClosing.update({
@@ -154,6 +168,9 @@ export class TurnoService {
           totalCartaoDebito: resumo.totalCartaoDebito,
           totalCartaoCredito: resumo.totalCartaoCredito,
           totalCancelados: resumo.totalCancelados,
+          fundoCaixa: resumo.fundoCaixa,
+          totalSangrias: resumo.totalSangrias,
+          totalSuprimentos: resumo.totalSuprimentos,
           dinheiroFisico: caixa.dinheiroFisico,
           divergenciaCaixa,
           observacaoCaixa: caixa.observacaoCaixa ?? null
@@ -163,7 +180,21 @@ export class TurnoService {
       // Reseta flag global
       turnoState.set(false)
       
-      return { success: true }
+      return { 
+        success: true,
+        recibo: {
+          fundoCaixa: resumo.fundoCaixa,
+          totalVendas: resumo.totalVendas,
+          totalDinheiro: resumo.totalDinheiro,
+          totalCartao: resumo.totalCartaoDebito + resumo.totalCartaoCredito,
+          totalPix: resumo.totalPix,
+          sangrias: resumo.totalSangrias,
+          suprimentos: resumo.totalSuprimentos,
+          dinheiroFisico: caixa.dinheiroFisico,
+          divergenciaDinheiro: divergenciaCaixa,
+          observacao: caixa.observacaoCaixa ?? undefined
+        }
+      }
     })
   }
 

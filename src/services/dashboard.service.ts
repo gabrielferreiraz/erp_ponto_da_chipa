@@ -23,8 +23,8 @@ export class DashboardService {
           dataFim = endOfDay(subDays(hoje, 1))
           break
         case 'semana':
-          dataInicio = startOfWeek(hoje, { weekStartsOn: 1 })
-          dataFim = endOfWeek(hoje, { weekStartsOn: 1 })
+          dataInicio = startOfWeek(hoje, { weekStartsOn: 0 })
+          dataFim = endOfWeek(hoje, { weekStartsOn: 0 })
           break
         case 'mes':
           dataInicio = startOfMonth(hoje)

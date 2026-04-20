@@ -265,24 +265,6 @@ export default function FilaCaixaPage() {
                 </span>
               </button>
               <button
-                onClick={() => { setAba('historico'); mutateHistorico() }}
-                className={cn(
-                  "flex items-center gap-2 px-4 py-1.5 rounded-lg text-[12px] font-bold transition-all",
-                  aba === 'historico' ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-700"
-                )}
-              >
-                <History className="w-3.5 h-3.5" />
-                Histórico
-                {historico.length > 0 && (
-                  <span className={cn(
-                    "min-w-[18px] h-[18px] rounded-full flex items-center justify-center font-mono text-[10px] font-black tabular-nums px-1",
-                    aba === 'historico' ? "bg-zinc-900 text-white" : "bg-zinc-300/60 text-zinc-500"
-                  )}>
-                    {historico.length}
-                  </span>
-                )}
-              </button>
-              <button
                 onClick={() => { setAba('mesas'); mutateMesas() }}
                 className={cn(
                   "flex items-center gap-2 px-4 py-1.5 rounded-lg text-[12px] font-bold transition-all",
@@ -297,6 +279,24 @@ export default function FilaCaixaPage() {
                     aba === 'mesas' ? "bg-zinc-900 text-white" : "bg-zinc-300/60 text-zinc-500"
                   )}>
                     {mesas.length}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => { setAba('historico'); mutateHistorico() }}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-1.5 rounded-lg text-[12px] font-bold transition-all",
+                  aba === 'historico' ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-700"
+                )}
+              >
+                <History className="w-3.5 h-3.5" />
+                Histórico
+                {historico.length > 0 && (
+                  <span className={cn(
+                    "min-w-[18px] h-[18px] rounded-full flex items-center justify-center font-mono text-[10px] font-black tabular-nums px-1",
+                    aba === 'historico' ? "bg-zinc-900 text-white" : "bg-zinc-300/60 text-zinc-500"
+                  )}>
+                    {historico.length}
                   </span>
                 )}
               </button>

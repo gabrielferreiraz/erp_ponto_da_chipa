@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -20,7 +20,11 @@ import {
   ChevronDown,
   ChevronUp,
   MessageSquare,
+  Minus,
+  Plus,
+  Printer
 } from 'lucide-react'
+import { ReciboFechamento } from '@/components/caixa/recibo-fechamento'
 import { useTurnoStatus } from '@/hooks/use-turno-status'
 import { useEstoque } from '@/hooks/use-estoque'
 import { useResumoCaixa } from '@/hooks/use-resumo-caixa'
@@ -42,6 +46,7 @@ export default function FechamentoPage() {
   const { status, mutate: mutateStatus, isLoading: loadingStatus } = useTurnoStatus()
   const { dashboard, isLoading: loadingEstoque } = useEstoque()
   const { resumo, isLoading: loadingResumo } = useResumoCaixa(!!status?.isClosingShift)
+  const isCego = status ? status.role !== 'ADMIN' : true
 
   const [contagens, setContagens] = useState<Record<string, number>>({})
   const [dinheiroFisico, setDinheiroFisico] = useState('')
@@ -51,6 +56,9 @@ export default function FechamentoPage() {
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [showCancelModal, setShowCancelModal] = useState(false)
   const [secaoAberta, setSecaoAberta] = useState<'caixa' | 'produtos'>('caixa')
+
+  const [reciboData, setReciboData] = useState<any>(null)
+  const printRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (status?.isClosingShift && dashboard?.produtos) {
@@ -113,10 +121,13 @@ export default function FechamentoPage() {
         throw new Error(err.error || 'Erro ao finalizar fechamento')
       }
 
+      const responseData = await res.json()
+
       toast.success('Turno fechado com sucesso!')
       setShowConfirmModal(false)
       setDinheiroFisico('')
       setObservacaoCaixa('')
+      setReciboData(responseData.recibo)
       mutateStatus()
     } catch (error: any) {
       toast.error(error.message)
@@ -196,7 +207,7 @@ export default function FechamentoPage() {
           <div className="bg-white rounded-3xl border border-zinc-200/60 shadow-sm overflow-hidden">
             <button
               onClick={() => setSecaoAberta(s => s === 'caixa' ? 'produtos' : 'caixa')}
-              className="w-full flex items-center justify-between px-8 py-6 hover:bg-zinc-50/50 transition-colors"
+              className="w-full flex items-center justify-between px-5 sm:px-8 py-5 sm:py-6 hover:bg-zinc-50/50 transition-colors"
             >
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center">
@@ -219,10 +230,12 @@ export default function FechamentoPage() {
                     {[1, 2, 3].map(i => <Skeleton key={i} className="h-14 w-full rounded-2xl" />)}
                   </div>
                 ) : resumo ? (
-                  <div className="p-8 space-y-6">
+                  <div className="p-5 sm:p-8 space-y-5 sm:space-y-6">
 
                     {/* KPIs do dia */}
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    {!isCego && (
+                      <>
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                       <div className="p-5 bg-zinc-50 rounded-2xl border border-zinc-100">
                         <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">Total Vendas</p>
                         <p className="text-2xl font-black text-zinc-900 tabular-nums">{fmt(resumo.totalVendas)}</p>
@@ -276,6 +289,8 @@ export default function FechamentoPage() {
                         ))}
                       </div>
                     </div>
+                      </>
+                    )}
 
                     {/* Campo: dinheiro físico em caixa */}
                     <div className="space-y-3">
@@ -284,7 +299,7 @@ export default function FechamentoPage() {
                           <p className="text-sm font-black text-zinc-900">Dinheiro Físico em Caixa</p>
                           <p className="text-[11px] text-zinc-400 font-medium mt-0.5">Conte o dinheiro e informe o valor total</p>
                         </div>
-                        {dinheiroFisico !== '' && (
+                        {dinheiroFisico !== '' && !isCego && (
                           <div className={cn(
                             "flex items-center gap-2 px-3 py-1.5 rounded-xl text-[11px] font-black",
                             divergenciaCaixa === 0
@@ -338,7 +353,7 @@ export default function FechamentoPage() {
           <div className="bg-white rounded-3xl border border-zinc-200/60 shadow-sm overflow-hidden">
             <button
               onClick={() => setSecaoAberta(s => s === 'produtos' ? 'caixa' : 'produtos')}
-              className="w-full flex items-center justify-between px-8 py-6 hover:bg-zinc-50/50 transition-colors"
+              className="w-full flex items-center justify-between px-5 sm:px-8 py-5 sm:py-6 hover:bg-zinc-50/50 transition-colors"
             >
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center">
@@ -350,12 +365,15 @@ export default function FechamentoPage() {
                     Informe a quantidade real de cada item
                   </p>
                 </div>
-                {divEstoque.count > 0 && (
-                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-50 border border-amber-100">
-                    <AlertCircle className="w-3 h-3 text-amber-500" />
-                    <span className="text-[10px] font-black text-amber-700">{divEstoque.count} divergência{divEstoque.count !== 1 ? 's' : ''}</span>
-                  </div>
-                )}
+                <div className={cn(
+                  "flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-50 border border-amber-100 transition-all sm:w-auto w-max shrink-0",
+                  divEstoque.count > 0 && !isCego ? "opacity-100" : "opacity-0 pointer-events-none"
+                )}>
+                  <AlertCircle className="w-3 h-3 text-amber-500" />
+                  <span className="text-[10px] font-black text-amber-700">
+                    {divEstoque.count || 0} divergência{divEstoque.count !== 1 ? 's' : ''}
+                  </span>
+                </div>
               </div>
               <ChevronDown className={cn("w-5 h-5 text-zinc-400 transition-transform", secaoAberta === 'produtos' && 'rotate-180')} />
             </button>
@@ -368,12 +386,15 @@ export default function FechamentoPage() {
                   </div>
                 ) : (
                   <div>
-                    {/* Cabeçalho da tabela */}
-                    <div className="grid grid-cols-[1fr_100px_160px_100px] px-8 h-10 items-center bg-zinc-50/80 border-b border-zinc-100">
+                    {/* Cabeçalho Desktop (escondido no mobile) */}
+                    <div className={cn(
+                      "hidden sm:grid px-8 h-10 items-center bg-zinc-50/80 border-b border-zinc-100",
+                      isCego ? "grid-cols-[1fr_160px]" : "grid-cols-[1fr_100px_160px_100px]"
+                    )}>
                       <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Produto</span>
-                      <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest text-center">Sistema</span>
+                      {!isCego && <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest text-center">Sistema</span>}
                       <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest text-center">Físico</span>
-                      <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest text-right">Diferença</span>
+                      {!isCego && <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest text-right">Diferença</span>}
                     </div>
 
                     <div className="divide-y divide-zinc-50">
@@ -386,33 +407,68 @@ export default function FechamentoPage() {
                           <div
                             key={p.id}
                             className={cn(
-                              "grid grid-cols-[1fr_100px_160px_100px] px-8 py-4 items-center transition-colors",
+                              "flex flex-col sm:grid px-5 sm:px-8 py-4 sm:items-center gap-4 sm:gap-0 transition-colors",
+                              isCego ? "sm:grid-cols-[1fr_160px]" : "sm:grid-cols-[1fr_100px_160px_100px]",
                               hasDivergence ? "bg-amber-50/40 hover:bg-amber-50" : "hover:bg-zinc-50/50"
                             )}
                           >
-                            <div>
-                              <p className="font-bold text-zinc-900 text-[13px]">{p.nome}</p>
-                              <p className="text-[10px] font-black text-zinc-400 uppercase tracking-tight">{p.categoria}</p>
+                            <div className="flex justify-between items-start sm:block">
+                              <div>
+                                <p className="font-bold text-zinc-900 text-[13px]">{p.nome}</p>
+                                <p className="text-[10px] font-black text-zinc-400 uppercase tracking-tight">{p.categoria}</p>
+                              </div>
+                              {/* Sistema no Mobile */}
+                              {!isCego && (
+                                <div className="sm:hidden text-right">
+                                  <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest block mb-0.5">Sistema</span>
+                                  <span className="text-lg font-black text-zinc-500 tabular-nums">{p.qtdVisor}</span>
+                                </div>
+                              )}
                             </div>
-                            <div className="text-center">
-                              <span className="text-xl font-black text-zinc-500 tabular-nums">{p.qtdVisor}</span>
-                            </div>
-                            <div className="flex justify-center">
-                              <Input
-                                type="number"
-                                className="w-24 h-11 text-center font-black text-lg rounded-xl border-zinc-200 focus:ring-zinc-900 focus:border-zinc-900 shadow-sm"
-                                value={qtdFisica}
-                                onChange={e => setContagens(prev => ({ ...prev, [p.id]: parseInt(e.target.value) || 0 }))}
-                                min={0}
-                              />
-                            </div>
-                            <div className="text-right">
-                              <span className={cn(
-                                "font-black text-lg tabular-nums",
-                                diferenca === 0 ? "text-zinc-200" : diferenca > 0 ? "text-emerald-600" : "text-rose-600"
-                              )}>
-                                {diferenca === 0 ? '—' : diferenca > 0 ? `+${diferenca}` : diferenca}
-                              </span>
+
+                            {/* Sistema no Desktop */}
+                            {!isCego && (
+                              <div className="hidden sm:block text-center">
+                                <span className="text-xl font-black text-zinc-500 tabular-nums">{p.qtdVisor}</span>
+                              </div>
+                            )}
+
+                            {/* Input Físico e Diferença (Mobile + Desktop) */}
+                            <div className="flex items-center gap-4 sm:contents">
+                              <div className="flex-1 sm:flex-none flex justify-end sm:justify-center">
+                                <div className="flex items-center w-full sm:w-auto bg-zinc-100 p-1 rounded-2xl ring-1 ring-zinc-200/60">
+                                  <button
+                                    onClick={() => setContagens(prev => ({ ...prev, [p.id]: Math.max(0, qtdFisica - 1) }))}
+                                    className="w-12 h-11 flex items-center justify-center rounded-xl bg-white shadow-sm text-zinc-500 hover:text-zinc-900 transition-colors shrink-0"
+                                  >
+                                    <Minus className="w-5 h-5" />
+                                  </button>
+                                  <Input
+                                    type="number"
+                                    className="flex-1 sm:w-16 h-11 text-center font-black text-xl bg-transparent border-0 focus-visible:ring-0 shadow-none px-0 tabular-nums"
+                                    value={qtdFisica}
+                                    onChange={e => setContagens(prev => ({ ...prev, [p.id]: parseInt(e.target.value) || 0 }))}
+                                    min={0}
+                                  />
+                                  <button
+                                    onClick={() => setContagens(prev => ({ ...prev, [p.id]: qtdFisica + 1 }))}
+                                    className="w-12 h-11 flex items-center justify-center rounded-xl bg-white shadow-sm text-zinc-500 hover:text-zinc-900 transition-colors shrink-0"
+                                  >
+                                    <Plus className="w-5 h-5" />
+                                  </button>
+                                </div>
+                              </div>
+                              {!isCego && (
+                                <div className="w-24 sm:w-auto text-right">
+                                  <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest block mb-1 sm:hidden">Dif.</span>
+                                  <span className={cn(
+                                    "font-black text-xl tabular-nums",
+                                    diferenca === 0 ? "text-zinc-200" : diferenca > 0 ? "text-emerald-600" : "text-rose-600"
+                                  )}>
+                                    {diferenca === 0 ? '—' : diferenca > 0 ? `+${diferenca}` : diferenca}
+                                  </span>
+                                </div>
+                              )}
                             </div>
                           </div>
                         )
@@ -566,6 +622,31 @@ export default function FechamentoPage() {
               }
             </button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Modal de Impressão do Recibo ── */}
+      <Dialog open={!!reciboData} onOpenChange={(v) => !v && setReciboData(null)}>
+        <DialogContent className="max-w-[400px] p-0 bg-zinc-200 border-none shadow-2xl overflow-hidden rounded-md">
+          {reciboData && (
+             <div className="bg-white mx-4 mt-6 mb-4 shadow-sm relative no-scrollbar max-h-[60vh] overflow-y-auto">
+               <ReciboFechamento ref={printRef} {...reciboData} usuario={status?.usuarioIniciou || 'Caixa'} data={new Date().toISOString()} />
+             </div>
+          )}
+          <div className="p-4 bg-zinc-200 border-t border-zinc-300 flex items-center justify-between no-print gap-3">
+             <button
+               onClick={() => setReciboData(null)}
+               className="h-12 px-6 flex items-center justify-center rounded-xl bg-white text-zinc-600 font-bold hover:bg-zinc-100 transition-colors shadow-sm focus:outline-none"
+             >
+               Fechar
+             </button>
+             <button
+               onClick={() => window.print()}
+               className="flex-1 h-12 flex items-center justify-center gap-2 rounded-xl bg-zinc-900 text-white font-bold hover:bg-zinc-800 transition-colors shadow-sm focus:outline-none"
+             >
+               <Printer className="w-5 h-5" /> Imprimir Recibo
+             </button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

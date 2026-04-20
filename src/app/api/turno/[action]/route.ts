@@ -21,7 +21,8 @@ export const GET = withSecurity(async (request, session) => {
   const action = url.pathname.split('/').pop()
 
   if (action === 'status') {
-    return NextResponse.json(await service.getStatus())
+    const statusData = await service.getStatus()
+    return NextResponse.json({ ...statusData, role: (session.user as any).role })
   }
 
   if (action === 'resumo-caixa') {

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useTransition } from 'react'
-import { Plus, Search, UserCircle, Shield, Mail, Calendar, MoreVertical, Trash2, Power, Edit3, Loader2, X, Check, Lock } from 'lucide-react'
+import { Plus, Search, UserCircle, Shield, Mail, Calendar, MoreVertical, Trash2, Power, Edit3, Loader2, X, Check, Lock, Eye, EyeOff } from 'lucide-react'
 import { getUsuariosAction, upsertUsuarioAction, toggleUsuarioStatusAction, deleteUsuarioAction } from '@/actions/usuarios'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -14,6 +14,9 @@ export default function UsuariosPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<any>(null)
   const [isPending, startTransition] = useTransition()
+
+  const [showPassword, setShowPassword] = useState(false)
+  const [senhaValue, setSenhaValue] = useState('')
 
   // Carregar usuários
   const loadUsuarios = async () => {
@@ -99,7 +102,7 @@ export default function UsuariosPage() {
           </div>
           
           <button 
-            onClick={() => { setEditingUser(null); setIsModalOpen(true); }}
+            onClick={() => { setEditingUser(null); setSenhaValue(''); setShowPassword(false); setIsModalOpen(true); }}
             className="h-12 px-6 bg-zinc-900 text-white rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-zinc-800 transition-all active:scale-95 flex items-center gap-2 shadow-lg shadow-zinc-900/10"
           >
             <Plus className="w-4 h-4" /> NOVO USUÁRIO
@@ -183,7 +186,7 @@ export default function UsuariosPage() {
                     <td className="px-8 py-5 text-right">
                       <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button 
-                          onClick={() => { setEditingUser(user); setIsModalOpen(true); }}
+                          onClick={() => { setEditingUser(user); setSenhaValue(''); setShowPassword(false); setIsModalOpen(true); }}
                           className="p-2 rounded-xl bg-white border border-zinc-200/60 text-zinc-400 hover:text-zinc-900 hover:border-zinc-900 transition-all active:scale-90"
                         >
                           <Edit3 className="w-4 h-4" />
@@ -263,8 +266,26 @@ export default function UsuariosPage() {
                         <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest px-1">Senha de Acesso</label>
                         <div className="relative">
                           <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-300" />
-                          <input type="password" name="senha" required={!editingUser} className="w-full h-14 pl-11 pr-6 bg-zinc-50 border border-zinc-100 rounded-2xl text-sm font-semibold focus:outline-none focus:ring-4 focus:ring-zinc-900/5 focus:border-zinc-900 transition-all" placeholder={editingUser ? '••••••' : 'Senha forte'} />
+                          <input 
+                            type={showPassword ? "text" : "password"} 
+                            name="senha" 
+                            required={!editingUser} 
+                            value={senhaValue}
+                            onChange={(e) => setSenhaValue(e.target.value)}
+                            className="w-full h-14 pl-11 pr-12 bg-zinc-50 border border-zinc-100 rounded-2xl text-sm font-semibold focus:outline-none focus:ring-4 focus:ring-zinc-900/5 focus:border-zinc-900 transition-all" 
+                            placeholder={editingUser ? '••••••' : 'Senha forte'} 
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 transition-colors"
+                          >
+                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
                         </div>
+                        {editingUser && senhaValue.length > 0 && (
+                          <p className="text-[10px] font-bold text-amber-600 mt-1 pl-1 pr-1 w-full flex justify-end">*trocar para nova senha*</p>
+                        )}
                       </div>
                     </div>
 

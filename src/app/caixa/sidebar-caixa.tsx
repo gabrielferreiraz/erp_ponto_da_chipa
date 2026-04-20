@@ -10,8 +10,10 @@ import {
   ChevronLeft,
   Menu,
   X,
+  Banknote,
 } from 'lucide-react'
 import { logoutAction } from '@/actions/auth'
+import { ModalMovimentacao } from '@/components/caixa/modal-movimentacao'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -27,6 +29,7 @@ interface SidebarProps {
 export function SidebarCaixa({ user }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isMobileOpen, setIsMobileOpen] = useState(false)
+  const [isModalMovimentacaoOpen, setIsModalMovimentacaoOpen] = useState(false)
   const pathname = usePathname()
 
   useEffect(() => { setIsMobileOpen(false) }, [pathname])
@@ -76,9 +79,11 @@ export function SidebarCaixa({ user }: SidebarProps) {
         {/* Logo */}
         <div className={cn('p-8 transition-all duration-300', isCollapsed ? 'px-6' : 'px-8')}>
           <div className="flex items-center gap-4 group cursor-default overflow-hidden">
-            <div className="bg-gradient-to-br from-[#F29100] via-[#E24A07] to-[#B91C1C] p-3 rounded-2xl shadow-[0_8px_16px_-4px_rgba(226,74,7,0.3),inset_0_1px_0_rgba(255,255,255,0.2)] transition-transform duration-300 group-hover:scale-110 flex-shrink-0">
-              <ChefHat className="w-6 h-6 text-white" strokeWidth={2} />
-            </div>
+            <img 
+              src="/logo.png" 
+              alt="Logo Ponto da Chipa" 
+              className="w-12 h-12 object-contain transition-transform duration-300 group-hover:scale-110 flex-shrink-0" 
+            />
             <div className={cn('space-y-0.5 transition-all duration-300', isCollapsed ? 'opacity-0 -translate-x-4 pointer-events-none' : 'opacity-100')}>
               <h1 className="text-lg font-black tracking-tighter text-zinc-900 leading-none uppercase whitespace-nowrap">Ponto da Chipa</h1>
               <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] whitespace-nowrap">Operação Caixa</p>
@@ -114,6 +119,22 @@ export function SidebarCaixa({ user }: SidebarProps) {
               </Link>
             )
           })}
+          
+          <div className={cn("mt-6 pt-6 border-t border-zinc-100", isCollapsed && "flex justify-center")}>
+            <button
+               onClick={() => {
+                 setIsModalMovimentacaoOpen(true)
+                 setIsMobileOpen(false)
+               }}
+               className={cn(
+                 "group flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-200 active:scale-[0.98] w-full text-left text-amber-600 hover:bg-amber-50 hover:text-amber-700",
+                 isCollapsed && "justify-center px-0 w-10 h-10"
+               )}
+            >
+               <Banknote className="w-5 h-5 flex-shrink-0" strokeWidth={1.5} />
+               {!isCollapsed && <span className="text-sm font-semibold tracking-tight whitespace-nowrap">Cofre & Movimento</span>}
+            </button>
+          </div>
         </nav>
 
         {/* User & Logout — always visible at bottom */}
@@ -157,6 +178,7 @@ export function SidebarCaixa({ user }: SidebarProps) {
           )}
         </div>
       </aside>
+      <ModalMovimentacao isOpen={isModalMovimentacaoOpen} onClose={() => setIsModalMovimentacaoOpen(false)} />
     </>
   )
 }

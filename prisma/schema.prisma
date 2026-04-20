@@ -21,8 +21,9 @@ model Usuario {
   pedidosCriados   Pedido[]              @relation("AtendentePedido")
   pedidosFechados  Pedido[]              @relation("CaixaPedido")
   movimentacoes    MovimentacaoEstoque[]
-  itensCancelados  ItemPedido[]
-  fechamentosTurno ShiftClosing[]
+  itensCancelados    ItemPedido[]
+  fechamentosTurno   ShiftClosing[]
+  caixaMovimentacoes CaixaMovimentacao[]
 
   @@map("usuarios")
 }
@@ -238,6 +239,10 @@ model ShiftClosing {
   divergenciaCaixa   Decimal?  @db.Decimal(10, 2)
   observacaoCaixa    String?
 
+  fundoCaixa         Decimal?  @db.Decimal(10, 2)
+  totalSangrias      Decimal?  @db.Decimal(10, 2)
+  totalSuprimentos   Decimal?  @db.Decimal(10, 2)
+
   @@index([status])
   @@index([iniciadoEm])
   @@map("shift_closings")
@@ -264,4 +269,26 @@ model ShiftClosingItem {
 
   @@index([shiftClosingId])
   @@map("shift_closing_items")
+}
+
+model CaixaMovimentacao {
+  id          String                @id @default(cuid())
+  tipo        TipoMovimentacaoCaixa
+  valor       Decimal               @db.Decimal(10, 2)
+  observacao  String?
+  usuarioId   String
+  usuario     Usuario               @relation(fields: [usuarioId], references: [id])
+  criadoEm    DateTime              @default(now())
+
+  @@index([criadoEm])
+  @@index([tipo])
+  @@map("caixa_movimentacoes")
+}
+
+enum TipoMovimentacaoCaixa {
+  SANGRIA
+  SUPRIMENTO
+  FUNDO_INICIAL
+
+  @@map("tipo_movimentacao_caixa")
 }

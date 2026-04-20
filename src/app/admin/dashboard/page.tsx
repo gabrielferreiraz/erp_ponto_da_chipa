@@ -10,8 +10,9 @@ import { LocalViagemChart } from '@/components/dashboard/local-viagem-chart'
 import { CancelamentosTable } from '@/components/dashboard/cancelamentos-table'
 import { MesasTable } from '@/components/dashboard/mesas-table'
 import { ProdutosRankingTable } from '@/components/dashboard/produtos-ranking-table'
-import { Layers, RefreshCcw } from 'lucide-react'
+import { Layers } from 'lucide-react'
 import { ExportButton } from '@/components/dashboard/export-button'
+import { ReloadButton } from '@/components/dashboard/reload-button'
 
 export default function AdminDashboardPage() {
   return (
@@ -35,9 +36,7 @@ export default function AdminDashboardPage() {
              <PeriodoSelector />
              <div className="hidden sm:block w-px h-8 bg-zinc-200/50 mx-2" />
              <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-               <button className="flex items-center justify-center gap-2 h-11 px-3 sm:px-4 rounded-2xl bg-white border border-zinc-200/50 text-zinc-400 hover:text-zinc-900 hover:border-zinc-300 transition-all shadow-sm ring-1 ring-black/[0.02] active:scale-95">
-                  <RefreshCcw className="w-4 h-4" />
-               </button>
+               <ReloadButton />
                <ExportButton />
              </div>
           </div>

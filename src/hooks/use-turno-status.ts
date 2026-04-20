@@ -7,6 +7,7 @@ export interface TurnoStatus {
   pedidosPendentes: number
   shiftClosingId: string | null
   usuarioIniciou: string | null
+  role?: string
 }
 
 export function useTurnoStatus() {
