@@ -134,9 +134,12 @@ export function ModalPagamento({ pedido: stalePedido, onClose }: ModalPagamentoP
 
 
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3 no-scrollbar md:bg-zinc-50/50">
-          <div className="flex items-center gap-2 px-1 mb-2">
-            <ShoppingBag className="w-4 h-4 text-zinc-400" />
-            <span className="text-[11px] font-black text-zinc-400 uppercase tracking-widest">Resumo do Pedido</span>
+          <div className="flex items-center justify-between px-1 mb-2">
+            <div className="flex items-center gap-2">
+              <ShoppingBag className="w-4 h-4 text-zinc-400" />
+              <span className="text-[11px] font-black text-zinc-400 uppercase tracking-widest">Resumo do Pedido</span>
+            </div>
+            <span className="text-[11px] font-mono font-bold text-zinc-300 tabular-nums">{pedido.itens.reduce((s, i) => s + i.quantidade, 0)} itens</span>
           </div>
           {pedido.itens.map(item => (
             <div key={item.id} className="flex items-center justify-between bg-white border-2 border-zinc-100 p-5 rounded-3xl shadow-sm hover:border-zinc-300 transition-colors group">
