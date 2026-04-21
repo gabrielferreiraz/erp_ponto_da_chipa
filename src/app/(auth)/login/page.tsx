@@ -8,7 +8,7 @@ export default function LoginPage() {
       <div className="absolute inset-0 z-[5] flex items-center justify-center pointer-events-none">
         <div className="w-[720px] h-[720px] rounded-full bg-white/70 blur-[120px] ring-1 ring-white/60 shadow-[0_60px_120px_-30px_rgba(0,0,0,0.15)]" />
       </div>
-      
+
       <div className="relative z-10 w-full flex items-center justify-center p-4">
         <Suspense fallback={
           <div className="w-full max-w-sm h-[450px] bg-white/40 backdrop-blur-2xl rounded-[32px] animate-pulse flex items-center justify-center border border-white shadow-xl">
