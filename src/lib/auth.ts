@@ -1,4 +1,5 @@
 import type { NextAuthConfig } from 'next-auth'
+import type { JWT } from 'next-auth/jwt'
 import Credentials from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
@@ -100,7 +101,7 @@ export const authConfig: NextAuthConfig = {
         const now = Math.floor(Date.now() / 1000)
         const authTime = (token.authTime as number) || (token.iat as number)
         if (authTime && now - authTime > 8 * 60 * 60) {
-          return { ...token, id: undefined, role: undefined }
+          return { ...token, id: undefined, role: undefined } as JWT
         }
       }
 
@@ -118,12 +119,12 @@ export const authConfig: NextAuthConfig = {
 
             if (!usuario || !usuario.ativo) {
               SecurityLogger.log({ event: 'SESSION_INVALIDATED', route: '/jwt-check', ip: '0.0.0.0', userId: token.id as string, details: 'usuario_desativado' })
-              return { ...token, id: undefined, role: undefined }
+              return { ...token, id: undefined, role: undefined } as JWT
             }
 
             if (usuario.sessionVersion !== token.sessionVersion) {
               SecurityLogger.log({ event: 'SESSION_INVALIDATED', route: '/jwt-check', ip: '0.0.0.0', userId: token.id as string, details: 'session_version_mismatch' })
-              return { ...token, id: undefined, role: undefined }
+              return { ...token, id: undefined, role: undefined } as JWT
             }
 
             token.lastCheck = now
