@@ -181,31 +181,39 @@ export function ModalPagamento({ pedido: stalePedido, onClose }: ModalPagamentoP
             <span className="text-[11px] font-black text-zinc-400 uppercase tracking-widest">Resumo do Pedido</span>
           </div>
           {pedido.itens.map(item => (
-            <div key={item.id} className="flex items-center justify-between bg-white border border-zinc-200 p-4 rounded-2xl shadow-sm group">
-              <div className="flex flex-col min-w-0 pr-4">
-                <span className="font-bold text-zinc-900 text-sm truncate leading-tight">{item.nomeSnapshot}</span>
-                <span className="text-zinc-400 font-mono text-xs tabular-nums font-bold mt-0.5">{formatMoney(Number(item.precoSnapshot))}</span>
+            <div key={item.id} className="flex items-center justify-between bg-white border-2 border-zinc-100 p-5 rounded-3xl shadow-sm hover:border-zinc-300 transition-colors group">
+              <div className="flex flex-col min-w-0 pr-4 gap-2 border-l-4 border-emerald-500 pl-3">
+                <span className="font-black text-zinc-900 text-lg truncate leading-tight">{item.nomeSnapshot}</span>
+                <div className="flex items-center gap-2">
+                  <div className="bg-zinc-900 px-2.5 py-1 rounded-md">
+                    <span className="text-emerald-400 font-mono text-sm tabular-nums font-black">{formatMoney(Number(item.precoSnapshot))}</span>
+                  </div>
+                  <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">unid.</span>
+                </div>
               </div>
               
-              <div className="flex items-center gap-2 bg-zinc-50 border border-zinc-100 rounded-xl p-1 shrink-0">
+              <div className="flex items-center gap-3 bg-zinc-50 border-2 border-zinc-100 rounded-2xl p-1.5 shrink-0">
                 <button 
                   onClick={() => handleUpdateItem(item.id, 'REMOVER')}
                   disabled={isProcessingItem === item.id || isSubmitting}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 text-zinc-400 hover:text-red-500 transition-colors disabled:opacity-50 active:scale-90"
+                  className="w-10 h-10 flex items-center justify-center rounded-xl bg-white shadow-sm border border-zinc-200 hover:bg-red-50 text-zinc-400 hover:text-red-600 hover:border-red-200 transition-all disabled:opacity-50 active:scale-90"
                 >
-                  {isProcessingItem === item.id ? <Loader2 className="w-4 h-4 animate-spin text-red-500" /> : (
-                    item.quantidade === 1 ? <Trash2 className="w-4 h-4" /> : <Minus className="w-4 h-4" />
+                  {isProcessingItem === item.id ? <Loader2 className="w-5 h-5 animate-spin text-red-500" /> : (
+                    item.quantidade === 1 ? <Trash2 className="w-5 h-5" /> : <Minus className="w-5 h-5" />
                   )}
                 </button>
-                <span className="font-mono text-sm font-black text-zinc-900 tabular-nums w-6 text-center">
-                  {item.quantidade}
-                </span>
+                <div className="flex flex-col items-center justify-center min-w-[32px]">
+                  <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest leading-none mb-1">QTD</span>
+                  <span className="font-mono text-xl font-black text-zinc-900 tabular-nums leading-none">
+                    {item.quantidade}
+                  </span>
+                </div>
                 <button 
                   onClick={() => handleUpdateItem(item.produtoId, 'ADICIONAR')}
                   disabled={isProcessingItem === item.produtoId || isSubmitting}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-orange-50 text-zinc-400 hover:text-orange-500 transition-colors disabled:opacity-50 active:scale-90"
+                  className="w-10 h-10 flex items-center justify-center rounded-xl bg-white shadow-sm border border-zinc-200 hover:bg-emerald-50 text-zinc-400 hover:text-emerald-600 hover:border-emerald-200 transition-all disabled:opacity-50 active:scale-90"
                 >
-                  {isProcessingItem === item.produtoId ? <Loader2 className="w-4 h-4 animate-spin text-orange-500" /> : <Plus className="w-4 h-4" />}
+                  {isProcessingItem === item.produtoId ? <Loader2 className="w-5 h-5 animate-spin text-emerald-500" /> : <Plus className="w-5 h-5" />}
                 </button>
               </div>
             </div>
