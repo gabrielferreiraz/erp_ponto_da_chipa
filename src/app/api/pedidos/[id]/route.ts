@@ -14,7 +14,7 @@ export async function PATCH(
   if (!session?.user) {
     return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   }
-  if (!['ADMIN', 'ATENDENTE'].includes(session.user.role as string)) {
+  if (!['ADMIN', 'ATENDENTE', 'CAIXA'].includes(session.user.role as string)) {
     return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
   }
 

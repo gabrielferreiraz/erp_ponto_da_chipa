@@ -9,7 +9,7 @@ export const GET = withSecurity(async (req, session) => {
   const pedidos = await pedidoService.getPedidosAtendente(session.user.id)
   return NextResponse.json(pedidos)
 }, { 
-  roles: ['ADMIN', 'ATENDENTE'],
+  roles: ['ADMIN', 'ATENDENTE', 'CAIXA'],
   rateLimit: { limit: 100, windowMs: 60 * 1000 } // 100 reqs/min
 })
 
@@ -33,6 +33,6 @@ export const POST = withSecurity(async (req, session) => {
 
   return NextResponse.json(novoPedido, { status: 201 })
 }, { 
-  roles: ['ADMIN', 'ATENDENTE'],
+  roles: ['ADMIN', 'ATENDENTE', 'CAIXA'],
   rateLimit: { limit: 20, windowMs: 60 * 1000 } // 20 pedidos/min (prevenção de spam)
 })
