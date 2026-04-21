@@ -43,12 +43,12 @@ export function ModalPagamento({ pedido: stalePedido, onClose }: ModalPagamentoP
     ).slice(0, 5)
   }, [produtos, searchTerm])
 
-  // Produtos de balcão: itens baratos e disponíveis (balas, chicletes, extras)
+  // Produtos de balcão: Extras sempre primeiro, depois baratos
   const produtosBalcao = useMemo(() => {
-    return produtos
-      .filter(p => p.disponivel && Number(p.preco) <= 15)
+    const extras = produtos.filter(p => p.disponivel && p.categoria?.nome?.toLowerCase() === 'extras')
+    const outros = produtos.filter(p => p.disponivel && p.categoria?.nome?.toLowerCase() !== 'extras' && Number(p.preco) <= 15)
       .sort((a, b) => Number(a.preco) - Number(b.preco))
-      .slice(0, 12)
+    return [...extras, ...outros].slice(0, 16)
   }, [produtos])
 
   const handlePagar = async () => {
