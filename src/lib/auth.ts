@@ -92,6 +92,7 @@ export const authConfig: NextAuthConfig = {
         token.nome = user.nome
         token.sessionVersion = user.sessionVersion
         token.authTime = Math.floor(Date.now() / 1000)
+        token.lastCheck = Math.floor(Date.now() / 1000)
       }
 
       // Expiração rígida de 8 horas para ADMIN (segurança)
@@ -99,8 +100,37 @@ export const authConfig: NextAuthConfig = {
         const now = Math.floor(Date.now() / 1000)
         const authTime = (token.authTime as number) || (token.iat as number)
         if (authTime && now - authTime > 8 * 60 * 60) {
-          // Invalida o token forçando propriedades vazias
           return { ...token, id: undefined, role: undefined }
+        }
+      }
+
+      // Revalidação periódica de ativo + sessionVersion (throttle 5min)
+      if (token.id && !user) {
+        const now = Math.floor(Date.now() / 1000)
+        const lastCheck = (token.lastCheck as number) || 0
+
+        if (now - lastCheck > 5 * 60) {
+          try {
+            const usuario = await prisma.usuario.findUnique({
+              where: { id: token.id as string },
+              select: { ativo: true, sessionVersion: true }
+            })
+
+            if (!usuario || !usuario.ativo) {
+              SecurityLogger.log({ event: 'SESSION_INVALIDATED', route: '/jwt-check', ip: '0.0.0.0', userId: token.id as string, details: 'usuario_desativado' })
+              return { ...token, id: undefined, role: undefined }
+            }
+
+            if (usuario.sessionVersion !== token.sessionVersion) {
+              SecurityLogger.log({ event: 'SESSION_INVALIDATED', route: '/jwt-check', ip: '0.0.0.0', userId: token.id as string, details: 'session_version_mismatch' })
+              return { ...token, id: undefined, role: undefined }
+            }
+
+            token.lastCheck = now
+          } catch (e) {
+            // Se o banco estiver fora, deixa passar (não trava o sistema)
+            console.error('[AUTH] Erro na revalidação de sessão:', e)
+          }
         }
       }
 
