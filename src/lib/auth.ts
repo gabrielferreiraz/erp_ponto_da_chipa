@@ -91,16 +91,31 @@ export const authConfig: NextAuthConfig = {
         token.role = user.role
         token.nome = user.nome
         token.sessionVersion = user.sessionVersion
+        token.authTime = Math.floor(Date.now() / 1000)
       }
+
+      // Expiração rígida de 8 horas para ADMIN (segurança)
+      if (token.role === 'ADMIN') {
+        const now = Math.floor(Date.now() / 1000)
+        const authTime = (token.authTime as number) || (token.iat as number)
+        if (authTime && now - authTime > 8 * 60 * 60) {
+          // Invalida o token forçando propriedades vazias
+          return { ...token, id: undefined, role: undefined }
+        }
+      }
+
       return token
     },
     async session({ session, token }) {
       // R3: Role SEMPRE vem do token, nunca do body
-      if (token) {
+      if (token && token.id) {
         session.user.id = token.id as string
         session.user.role = token.role as 'ADMIN' | 'CAIXA' | 'ATENDENTE'
         session.user.nome = token.nome as string
         session.user.sessionVersion = token.sessionVersion
+      } else {
+        // Se o token foi invalidado (ex: Admin timeout), envia sessão inválida
+        (session as any).user = null
       }
       return session
     },
@@ -113,7 +128,7 @@ export const authConfig: NextAuthConfig = {
 
   session: {
     strategy: 'jwt',
-    maxAge: 8 * 60 * 60, // 8 horas (duração de um turno)
+    maxAge: 30 * 24 * 60 * 60, // 30 dias para Atendente e Caixa (ADMIN controlado no JWT para 8h)
   },
 
   trustHost: true,
