@@ -139,10 +139,11 @@ export class PedidoService {
     const pedidoAtual = await this.repository.findById(data.id)
     if (!pedidoAtual) throw new Error('NOT_FOUND: Pedido não encontrado.')
     
-    // Regra: Atendente só edita o próprio pedido (ADMIN pode editar qualquer um)
-    const isAdmin = await prisma.usuario.findUnique({ where: { id: data.atendenteId } }).then(u => u?.role === 'ADMIN')
+    // Regra: Atendente só edita o próprio pedido (ADMIN e CAIXA podem editar qualquer um)
+    const usuario = await prisma.usuario.findUnique({ where: { id: data.atendenteId } })
+    const isAdminOrCaixa = usuario && ['ADMIN', 'CAIXA'].includes(usuario.role)
     
-    if (pedidoAtual.atendenteId !== data.atendenteId && !isAdmin) {
+    if (pedidoAtual.atendenteId !== data.atendenteId && !isAdminOrCaixa) {
        throw new Error('FORBIDDEN: Você não tem permissão para editar este pedido.')
     }
 
@@ -181,7 +182,10 @@ export class PedidoService {
     const pedidoAtual = await this.repository.findById(pedidoId)
     
     if (!pedidoAtual) throw new Error('NOT_FOUND: Pedido não encontrado.')
-    if (pedidoAtual.atendenteId !== atendenteId) throw new Error('FORBIDDEN: Não permitido.')
+    const usuario = await prisma.usuario.findUnique({ where: { id: atendenteId } })
+    const isAdminOrCaixa = usuario && ['ADMIN', 'CAIXA'].includes(usuario.role)
+    
+    if (pedidoAtual.atendenteId !== atendenteId && !isAdminOrCaixa) throw new Error('FORBIDDEN: Não permitido.')
     if (pedidoAtual.orderStatus !== 'ABERTO') throw new Error('CONFLICT: O pedido já não está ABERTO.')
     
     const finalizado = await this.repository.updateStatus(pedidoId, 'AGUARDANDO_COBRANCA')
@@ -200,7 +204,7 @@ export class PedidoService {
     const usuario = await prisma.usuario.findUnique({ where: { id: atendenteId } })
     if (!usuario) throw new Error('NOT_FOUND: Usuário não encontrado.')
     
-    if (pedidoAtual.atendenteId !== atendenteId && usuario.role !== 'ADMIN') {
+    if (pedidoAtual.atendenteId !== atendenteId && !['ADMIN', 'CAIXA'].includes(usuario.role)) {
       throw new Error('FORBIDDEN: Você não tem permissão para cancelar este pedido.')
     }
 
